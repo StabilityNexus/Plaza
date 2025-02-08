@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Plaza is ERC20, Ownable, ReentrancyGuard {
     enum ProjectType { VOLUNTEER_HOURS, FUNDRAISING }
     enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
 
     // Project metadata as individual public variables
+    IERC20 public coin;
     string public projectName;
     string public projectDescription;
     int256 public latitude;
@@ -36,6 +38,7 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     constructor(
         string memory _name,
         string memory _symbol,
+        address _coin,
         string memory _projectName,
         string memory _projectDescription,
         int256 _latitude,
@@ -46,6 +49,7 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         ProjectType _projectType,
         address _owner
     ) ERC20(_name, _symbol) Ownable(_owner) {
+        coin = IERC20(_coin); 
         projectName = _projectName;
         projectDescription = _projectDescription;
         latitude = _latitude;
