@@ -5,10 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import { Plaza } from "./Plaza.sol";
 
 contract PlazaFactory is Ownable {
-
     mapping(uint256 => Plaza) public projects;
-
     uint256 public projectCount;
+    address public protocolFeeReceiver;
 
     event ProjectCreated(
         uint256 indexed projectId,
@@ -16,8 +15,9 @@ contract PlazaFactory is Ownable {
         string name,
         int256 latitude,
         int256 longitude,
-        Plaza.ProjectType projectType
+        uint256 targetAmount
     );
+
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
@@ -31,8 +31,7 @@ contract PlazaFactory is Ownable {
         int256 longitude,
         uint256 startTime,
         uint256 endTime,
-        uint256 targetAmount,
-        Plaza.ProjectType projectType
+        uint256 targetAmount
     ) external returns (address) {
         projectCount++;
 
@@ -47,8 +46,8 @@ contract PlazaFactory is Ownable {
             startTime,
             endTime,
             targetAmount,
-            projectType,
-            msg.sender
+            msg.sender,
+            protocolFeeReceiver
         );
 
         projects[projectCount] = newProject;
@@ -59,7 +58,7 @@ contract PlazaFactory is Ownable {
             projectName,
             latitude,
             longitude,
-            projectType
+            targetAmount
         );
 
         return address(newProject);

@@ -7,10 +7,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Plaza is ERC20, Ownable, ReentrancyGuard {
-    enum ProjectType { VOLUNTEER_HOURS, FUNDRAISING }
     enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
 
-    // Project metadata as individual public variables
+    uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3;
+    address public protocolFeeReceiver;
+
     IERC20 public coin;
     string public projectName;
     string public projectDescription;
@@ -18,13 +19,10 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     int256 public longitude;
     uint256 public startTime;
     uint256 public endTime;
-    uint256 public targetAmount;    // For fundraising projects
-    uint256 public raisedAmount;    // Current amount raised
-    ProjectType public projectType;
+    uint256 public targetAmount;    
+    uint256 public raisedAmount;   
     ProjectStatus public status;
 
-    
-    // Other public variables
     uint256 public constant PRECISION = 1e6;
     uint256 public volunteeredSeconds;  // Total volunteered seconds
     mapping(address => uint256) public volunteerStartTimes;
@@ -34,6 +32,8 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     event VolunteerEnded(address indexed volunteer, uint256 duration, uint256 tokensAwarded);
     event FundsContributed(address indexed contributor, uint256 amount, uint256 tokensAwarded);
     event ProjectStatusUpdated(ProjectStatus newStatus);
+    event ProtocolFeeCollected(uint256 feeAmount);
+    event ProtocolFeeReceiverUpdated(address indexed newReceiver);
 
     constructor(
         string memory _name,
@@ -46,21 +46,23 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _targetAmount,
-        ProjectType _projectType,
-        address _owner
+        address _owner,
+        address _protocolFeeReceiver
     ) ERC20(_name, _symbol) Ownable(_owner) {
+        require(_protocolFeeReceiver != address(0), "Invalid protocol fee receiver");
+        
         coin = IERC20(_coin); 
-        projectName = _projectName;
-        projectDescription = _projectDescription;
-        latitude = _latitude;
-        longitude = _longitude;
-        startTime = _startTime;
-        endTime = _endTime;
-        targetAmount = _targetAmount;
-        raisedAmount = 0;
-        projectType = _projectType;
-        status = ProjectStatus.ACTIVE;
-    }
+        projectName = _projectName; 
+        projectDescription = _projectDescription; 
+        latitude = _latitude; 
+        longitude = _longitude; 
+        startTime = _startTime; 
+        endTime = _endTime; 
+        targetAmount = _targetAmount; 
+        raisedAmount = 0; 
+        status = ProjectStatus.ACTIVE; 
+        protocolFeeReceiver = _protocolFeeReceiver; 
+    } 
 
     modifier onlyActive() {
         require(status == ProjectStatus.ACTIVE, "Project is not active");
@@ -70,7 +72,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     }
 
     function startVolunteering() external onlyActive {
-        require(projectType == ProjectType.VOLUNTEER_HOURS, "Not a volunteer project");
         require(!isVolunteering[msg.sender], "Already volunteering");
         
         volunteerStartTimes[msg.sender] = block.timestamp;
@@ -94,14 +95,22 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         emit VolunteerEnded(msg.sender, duration, tokensToMint);
     }
 
-    function contribute() external payable onlyActive {
-        require(projectType == ProjectType.FUNDRAISING, "Not a fundraising project");
+    function contribute() external payable onlyActive nonReentrant {
+        require(targetAmount > 0, "Project does not accept funds");
         require(msg.value > 0, "Must contribute some amount");
         
-        raisedAmount += msg.value;
-        _mint(msg.sender, msg.value);
+        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / 100;
+        uint256 projectAmount = msg.value - protocolFee;
+        
+        // Sending protocol fee to fee receiver
+        (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
+        require(feeSuccess, "Protocol fee transfer failed");
+        
+        raisedAmount += projectAmount;
+        _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
         
         emit FundsContributed(msg.sender, msg.value, msg.value);
+        emit ProtocolFeeCollected(protocolFee);
         
         if (raisedAmount >= targetAmount) {
             status = ProjectStatus.COMPLETED;
@@ -115,12 +124,20 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         emit ProjectStatusUpdated(_status);
     }
 
-    function withdrawFunds() external onlyOwner {
-        require(projectType == ProjectType.FUNDRAISING, "Not a fundraising project");
+    function withdrawFunds() external onlyOwner nonReentrant {
+        require(targetAmount > 0, "Project does not accept funds");
         require(status == ProjectStatus.COMPLETED, "Project not completed");
         
         uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        
         (bool sent, ) = owner().call{value: balance}("");
         require(sent, "Failed to send funds");
+    }
+
+    function updateProtocolFeeReceiver(address _newReceiver) external onlyOwner {
+        require(_newReceiver != address(0), "Invalid protocol fee receiver");
+        protocolFeeReceiver = _newReceiver;
+        emit ProtocolFeeReceiverUpdated(_newReceiver);
     }
 }
