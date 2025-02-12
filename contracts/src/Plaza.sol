@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract Plaza is ERC20, Ownable, ReentrancyGuard {
     enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
 
-    uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3;
+     uint256 public constant PROTOCOL_FEE_PERCENTAGE = 30000;
     address public protocolFeeReceiver;
 
     IERC20 public coin;
@@ -20,7 +20,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     uint256 public startTime;
     uint256 public endTime;
     uint256 public targetAmount;    
-    uint256 public raisedAmount;   
     ProjectStatus public status;
 
     uint256 public constant PRECISION = 1e6;
@@ -34,6 +33,7 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     event ProjectStatusUpdated(ProjectStatus newStatus);
     event ProtocolFeeCollected(uint256 feeAmount);
     event ProtocolFeeReceiverUpdated(address indexed newReceiver);
+    event FundsWithdrawn(uint256 amount);
 
     constructor(
         string memory _name,
@@ -59,7 +59,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         startTime = _startTime; 
         endTime = _endTime; 
         targetAmount = _targetAmount; 
-        raisedAmount = 0; 
         status = ProjectStatus.ACTIVE; 
         protocolFeeReceiver = _protocolFeeReceiver; 
     } 
@@ -99,20 +98,18 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         require(targetAmount > 0, "Project does not accept funds");
         require(msg.value > 0, "Must contribute some amount");
         
-        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / 100;
-        uint256 projectAmount = msg.value - protocolFee;
+        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
         
         // Sending protocol fee to fee receiver
         (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
         require(feeSuccess, "Protocol fee transfer failed");
         
-        raisedAmount += projectAmount;
         _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
         
         emit FundsContributed(msg.sender, msg.value, msg.value);
         emit ProtocolFeeCollected(protocolFee);
         
-        if (raisedAmount >= targetAmount) {
+        if (isFundingGoalReached()) {
             status = ProjectStatus.COMPLETED;
             emit ProjectStatusUpdated(ProjectStatus.COMPLETED);
         }
@@ -126,13 +123,19 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
 
     function withdrawFunds() external onlyOwner nonReentrant {
         require(targetAmount > 0, "Project does not accept funds");
-        require(status == ProjectStatus.COMPLETED, "Project not completed");
-        
-        uint256 balance = address(this).balance;
+        uint256 balance = getRaisedAmount();
         require(balance > 0, "No funds to withdraw");
+        
+        // Mark project as completed when withdrawing
+        if (status != ProjectStatus.COMPLETED) {
+            status = ProjectStatus.COMPLETED;
+            emit ProjectStatusUpdated(ProjectStatus.COMPLETED);
+        }
         
         (bool sent, ) = owner().call{value: balance}("");
         require(sent, "Failed to send funds");
+        
+        emit FundsWithdrawn(balance);
     }
 
     function updateProtocolFeeReceiver(address _newReceiver) external onlyOwner {
@@ -140,4 +143,13 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         protocolFeeReceiver = _newReceiver;
         emit ProtocolFeeReceiverUpdated(_newReceiver);
     }
+
+    function getRaisedAmount() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function isFundingGoalReached() public view returns (bool) {
+        return getRaisedAmount() >= targetAmount;
+    }
+
 }
