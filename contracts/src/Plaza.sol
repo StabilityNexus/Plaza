@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract Plaza is ERC20, Ownable, ReentrancyGuard {
     enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
 
-     uint256 public constant PROTOCOL_FEE_PERCENTAGE = 30000;
+    uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3e4;
     address public protocolFeeReceiver;
 
     IERC20 public coin;
@@ -19,7 +19,9 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     int256 public longitude;
     uint256 public startTime;
     uint256 public endTime;
-    uint256 public targetAmount;    
+    uint256 public targetAmount;
+    bool public targetReached = false;
+    uint256 public raisedAmount = 0;   // Total amount raised
     ProjectStatus public status;
 
     uint256 public constant PRECISION = 1e6;
@@ -63,6 +65,22 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         protocolFeeReceiver = _protocolFeeReceiver; 
     } 
 
+    /**
+     * @dev Prevents direct ETH transfers to the contract.
+     * Users must use the contribute() function to send funds.
+     */
+    receive() external payable {
+        revert("Use contribute() to send funds");
+    }
+
+    /**
+     * @dev Prevents fallback calls to the contract.
+     * This ensures users can't accidentally send funds through fallback.
+     */
+    fallback() external payable {
+        revert("Function does not exist");
+    }
+
     modifier onlyActive() {
         require(status == ProjectStatus.ACTIVE, "Project is not active");
         require(block.timestamp >= startTime, "Project has not started");
@@ -103,16 +121,33 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         // Sending protocol fee to fee receiver
         (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
         require(feeSuccess, "Protocol fee transfer failed");
+
+        raisedAmount += msg.value;
         
         _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
+
+        if (raisedAmount >= targetAmount) {
+            targetReached = true;
+        }
         
         emit FundsContributed(msg.sender, msg.value, msg.value);
         emit ProtocolFeeCollected(protocolFee);
+    }
+
+    function withdrawFunds() external onlyOwner nonReentrant {
+        uint256 amountRaised = balance();
+        require(amountRaised > 0, "No funds to withdraw");
         
-        if (isFundingGoalReached()) {
+        // Mark project as completed when withdrawing
+        if (status != ProjectStatus.COMPLETED) {
             status = ProjectStatus.COMPLETED;
             emit ProjectStatusUpdated(ProjectStatus.COMPLETED);
         }
+        
+        (bool sent, ) = owner().call{value: amountRaised}("");
+        require(sent, "Failed to send funds");
+        
+        emit FundsWithdrawn(amountRaised);
     }
 
     function updateProjectStatus(ProjectStatus _status) external onlyOwner {
@@ -121,35 +156,13 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         emit ProjectStatusUpdated(_status);
     }
 
-    function withdrawFunds() external onlyOwner nonReentrant {
-        require(targetAmount > 0, "Project does not accept funds");
-        uint256 balance = getRaisedAmount();
-        require(balance > 0, "No funds to withdraw");
-        
-        // Mark project as completed when withdrawing
-        if (status != ProjectStatus.COMPLETED) {
-            status = ProjectStatus.COMPLETED;
-            emit ProjectStatusUpdated(ProjectStatus.COMPLETED);
-        }
-        
-        (bool sent, ) = owner().call{value: balance}("");
-        require(sent, "Failed to send funds");
-        
-        emit FundsWithdrawn(balance);
-    }
-
     function updateProtocolFeeReceiver(address _newReceiver) external onlyOwner {
         require(_newReceiver != address(0), "Invalid protocol fee receiver");
         protocolFeeReceiver = _newReceiver;
         emit ProtocolFeeReceiverUpdated(_newReceiver);
     }
 
-    function getRaisedAmount() public view returns (uint256) {
+    function balance() public view returns (uint256) {
         return address(this).balance;
     }
-
-    function isFundingGoalReached() public view returns (bool) {
-        return getRaisedAmount() >= targetAmount;
-    }
-
 }
