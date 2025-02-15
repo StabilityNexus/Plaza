@@ -24,7 +24,6 @@ contract PlazaFactory is Ownable {
     function createProject(
         string memory name,
         string memory symbol,
-        address coin,
         string memory projectName,
         string memory projectDescription,
         int256 latitude,
@@ -38,7 +37,6 @@ contract PlazaFactory is Ownable {
         Plaza newProject = new Plaza(
             name,
             symbol,
-            coin,
             projectName,
             projectDescription,
             latitude,

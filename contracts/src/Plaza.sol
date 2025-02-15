@@ -12,7 +12,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3e4;
     address public protocolFeeReceiver;
 
-    IERC20 public coin;
     string public projectName;
     string public projectDescription;
     int256 public latitude;
@@ -20,7 +19,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     uint256 public startTime;
     uint256 public endTime;
     uint256 public targetAmount;
-    bool public targetReached = false;
     uint256 public raisedAmount = 0;   // Total amount raised
     ProjectStatus public status;
 
@@ -40,7 +38,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     constructor(
         string memory _name,
         string memory _symbol,
-        address _coin,
         string memory _projectName,
         string memory _projectDescription,
         int256 _latitude,
@@ -53,7 +50,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     ) ERC20(_name, _symbol) Ownable(_owner) {
         require(_protocolFeeReceiver != address(0), "Invalid protocol fee receiver");
         
-        coin = IERC20(_coin); 
         projectName = _projectName; 
         projectDescription = _projectDescription; 
         latitude = _latitude; 
@@ -125,10 +121,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         raisedAmount += msg.value;
         
         _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
-
-        if (raisedAmount >= targetAmount) {
-            targetReached = true;
-        }
         
         emit FundsContributed(msg.sender, msg.value, msg.value);
         emit ProtocolFeeCollected(protocolFee);
@@ -164,5 +156,9 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
 
     function balance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function isFundingGoalReached() public view returns (bool) {
+        return targetAmount <= raisedAmount;
     }
 }
