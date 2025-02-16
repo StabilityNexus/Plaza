@@ -127,19 +127,13 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     }
 
     function withdrawFunds() external onlyOwner nonReentrant {
-        uint256 amountRaised = balance();
-        require(amountRaised > 0, "No funds to withdraw");
+        uint256 balance = balance();
+        require(balance > 0, "No funds to withdraw");
         
-        // Mark project as completed when withdrawing
-        if (status != ProjectStatus.COMPLETED) {
-            status = ProjectStatus.COMPLETED;
-            emit ProjectStatusUpdated(ProjectStatus.COMPLETED);
-        }
-        
-        (bool sent, ) = owner().call{value: amountRaised}("");
+        (bool sent, ) = owner().call{value: balance}("");
         require(sent, "Failed to send funds");
         
-        emit FundsWithdrawn(amountRaised);
+        emit FundsWithdrawn(balance);
     }
 
     function updateProjectStatus(ProjectStatus _status) external onlyOwner {
