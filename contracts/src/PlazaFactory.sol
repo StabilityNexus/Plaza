@@ -7,7 +7,6 @@ import { Plaza } from "./Plaza.sol";
 contract PlazaFactory is Ownable {
     mapping(uint256 => Plaza) public projects;
     uint256 public projectCount;
-    address public protocolFeeReceiver;
 
     event ProjectCreated(
         uint256 indexed projectId,
@@ -44,8 +43,7 @@ contract PlazaFactory is Ownable {
             startTime,
             endTime,
             targetAmount,
-            msg.sender,
-            protocolFeeReceiver
+            msg.sender
         );
 
         projects[projectCount] = newProject;
