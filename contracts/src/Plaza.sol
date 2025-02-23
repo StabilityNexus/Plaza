@@ -10,7 +10,7 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
 
     uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3e4;
-    address public protocolFeeReceiver;
+    address public constant protocolFeeReceiver = 0xB3cb2589e5D8C451C7D0adF3348f9D198eAd58C9;
 
     string public projectName;
     string public projectDescription;
@@ -45,11 +45,8 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _targetAmount,
-        address _owner,
-        address _protocolFeeReceiver
-    ) ERC20(_name, _symbol) Ownable(_owner) {
-        require(_protocolFeeReceiver != address(0), "Invalid protocol fee receiver");
-        
+        address _owner
+    ) ERC20(_name, _symbol) Ownable(_owner) {        
         projectName = _projectName; 
         projectDescription = _projectDescription; 
         latitude = _latitude; 
@@ -58,7 +55,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         endTime = _endTime; 
         targetAmount = _targetAmount; 
         status = ProjectStatus.ACTIVE; 
-        protocolFeeReceiver = _protocolFeeReceiver; 
     } 
 
     /**
@@ -142,12 +138,6 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         emit ProjectStatusUpdated(_status);
     }
 
-    function updateProtocolFeeReceiver(address _newReceiver) external onlyOwner {
-        require(_newReceiver != address(0), "Invalid protocol fee receiver");
-        protocolFeeReceiver = _newReceiver;
-        emit ProtocolFeeReceiverUpdated(_newReceiver);
-    }
-
     function balance() public view returns (uint256) {
         return address(this).balance;
     }
@@ -156,3 +146,4 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         return targetAmount <= raisedAmount;
     }
 }
+
