@@ -3,13 +3,17 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { ProjectData } from "./ExplorerProjects";
+import { config } from "@/utlis/config";
 
 export default function CardProject({ project }: { project: ProjectData }) {
   const router = useRouter();
+  const chainId = config.state.chainId;
 
   const handleClick = () => {
     // Navigate to a detailed view for the project.
-    router.push(`/project?address=${project.projectAddress}`);
+    router.push(
+      `/p?chainId=${chainId}&projectId=${project.projectAddress}`
+    );
   };
 
   return (

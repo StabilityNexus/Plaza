@@ -104,21 +104,21 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         emit VolunteerEnded(msg.sender, duration, tokensToMint);
     }
 
-    function contribute() external payable onlyActive nonReentrant {
+    function contribute(uint256 amount) external payable onlyActive nonReentrant {
         require(targetAmount > 0, "Project does not accept funds");
-        require(msg.value > 0, "Must contribute some amount");
+        require(amount > 0, "Must contribute some amount");
         
-        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
+        uint256 protocolFee = (amount * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
         
         // Sending protocol fee to fee receiver
         (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
         require(feeSuccess, "Protocol fee transfer failed");
 
-        raisedAmount += msg.value;
+        raisedAmount += amount;
         
-        _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
+        _mint(msg.sender, amount);        // Still minting tokens based on full contribution
         
-        emit FundsContributed(msg.sender, msg.value, msg.value);
+        emit FundsContributed(msg.sender, amount, amount);
         emit ProtocolFeeCollected(protocolFee);
     }
 
