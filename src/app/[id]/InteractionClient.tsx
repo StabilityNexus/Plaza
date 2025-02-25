@@ -128,9 +128,10 @@ export default function InteractionClient() {
   }, [chainId, projectAddress, publicClient, userAddress]);
 
   // Handler to prompt for contribution amount and call contribute()
+  // Handler for starting contribution (volunteering)
   const handleStartVolunteering = async () => {
     if (!walletClient || !projectAddress) return;
-    // Ask user for the contribution amount (in wei)
+    // Ask the user for the contribution amount (in wei)
     const amountInput = prompt(
       "Enter the amount (in wei) you would like to contribute:"
     );
@@ -138,7 +139,7 @@ export default function InteractionClient() {
     let amount: bigint;
     try {
       amount = BigInt(amountInput);
-      if (amount <= 0n) {
+      if (amount <= 0) {
         alert("Amount must be greater than zero.");
         return;
       }
@@ -150,13 +151,13 @@ export default function InteractionClient() {
     setTxLoading(true);
     setError(null);
     try {
-      // Call the contribute function which now accepts an amount parameter.
+      // Call the contribute function without arguments,
+      // but pass the entered amount as msg.value.
       const tx = await walletClient.writeContract({
         address: projectAddress,
         abi: PlazaAbi,
         functionName: "contribute",
-        args: [amount],
-        // Pass the amount as msg.value as well
+        args: [], // no arguments are passed since the contract uses msg.value
         value: amount,
       });
       console.log("Contribution successful:", tx);
