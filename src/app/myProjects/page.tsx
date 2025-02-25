@@ -30,7 +30,7 @@ type ProjectData = {
   status: ProjectStatus;
 };
 
-export default function MyProjectsPage() {
+export default function MyProjects() {
   const { address: userAddress } = useAccount();
   const chainId = config.state.chainId;
 
@@ -47,57 +47,57 @@ export default function MyProjectsPage() {
 
   useEffect(() => {
     // Only fetch projects if the wallet is connected.
+    console.log(userAddress);
     if (!userAddress) return;
 
     async function fetchProjects() {
       setLoading(true);
       setError(null);
       try {
-        // 1. Get total number of projects
-        const totalProjects = (await publicClient.readContract({
+        // Fetch all projects created by the connected user.
+        const creatorProjects = (await publicClient.readContract({
           address: PlazaFactoryAddress[chainId] as `0x${string}`,
           abi: PlazaFactoryAbi,
-          functionName: "projectCount",
-        })) as number;
+          functionName: "getProjectsByCreator",
+          args: [userAddress],
+        })) as `0x${string}[]`;
 
-        // 2. Loop over each project index
+
+        console.log(creatorProjects);
+
         const allProjects: ProjectData[] = [];
-        for (let i = 1; i <= totalProjects; i++) {
-          const projectAddress = (await publicClient.readContract({
-            address: PlazaFactoryAddress[chainId] as `0x${string}`,
-            abi: PlazaFactoryAbi,
-            functionName: "projects",
-            args: [i],
-          })) as `0x${string}`;
+        // Loop over each project address from the creator mapping.
+        for (let i = 0; i < creatorProjects.length; i++) {
+          const projectAddress = creatorProjects[i];
 
-          // 3. From each Plaza contract, read relevant info
+          // Fetch project details from each Plaza contract.
           const [projectName, startTime, endTime, rawStatus] =
             (await Promise.all([
               publicClient.readContract({
-                address: projectAddress,
+                address: projectAddress as `0x${string}`,
                 abi: PlazaAbi,
                 functionName: "projectName",
               }),
               publicClient.readContract({
-                address: projectAddress,
+                address: projectAddress as `0x${string}`,
                 abi: PlazaAbi,
                 functionName: "startTime",
               }),
               publicClient.readContract({
-                address: projectAddress,
+                address: projectAddress as `0x${string}`,
                 abi: PlazaAbi,
                 functionName: "endTime",
               }),
               publicClient.readContract({
-                address: projectAddress,
+                address: projectAddress as `0x${string}`,
                 abi: PlazaAbi,
                 functionName: "status",
               }),
             ])) as [string, bigint, bigint, number];
 
           allProjects.push({
-            id: i,
-            address: projectAddress,
+            id: i+1,
+            address: projectAddress as `0x${string}`,
             projectName,
             startTime: Number(startTime),
             endTime: Number(endTime),
@@ -105,7 +105,7 @@ export default function MyProjectsPage() {
           });
         }
 
-        // 4. Classify projects as upcoming, ongoing, or past
+        // Classify projects as upcoming, ongoing, or past.
         const now = Math.floor(Date.now() / 1000);
         const upcoming: ProjectData[] = [];
         const ongoing: ProjectData[] = [];
@@ -178,6 +178,12 @@ export default function MyProjectsPage() {
                 {/* TabsList */}
                 <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
                   <TabsTrigger
+                    value="past"
+                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
+                  >
+                    Past
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="ongoing"
                     className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
                   >
@@ -188,12 +194,6 @@ export default function MyProjectsPage() {
                     className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
                   >
                     Upcoming
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="past"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Past
                   </TabsTrigger>
                 </TabsList>
 
