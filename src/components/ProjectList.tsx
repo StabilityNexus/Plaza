@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { config } from "@/utlis/config";
+import ButtonSvg from "./ui/ButtonSVG";
 
 enum ProjectStatus {
   ACTIVE = 0,
@@ -16,6 +16,7 @@ type ProjectData = {
   id: number;
   address: `0x${string}`;
   projectName: string;
+  projectDescription: string;
   startTime: number;
   endTime: number;
   status: ProjectStatus;
@@ -46,28 +47,36 @@ export default function ProjectList({ projects }: { projects: ProjectData[] }) {
           exit={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="bg-[#1B2430] border border-gray-700 rounded-lg shadow hover:shadow-md transition-shadow duration-300">
+          <Card className="bg-[#0E0C15] border border-[#252134] rounded-2xl shadow hover:shadow-md transition-shadow duration-300 py-8">
             <CardContent className="px-4 pb-4">
-              <CardTitle className="text-lg font-semibold text-white">
+              <CardTitle className="text-3xl font-semibold bg-gradient-to-bl from-[#FACB7B] via-[#D87CEE] to-[#89F9E8]  text-transparent bg-clip-text ">
                 {project.projectName}
               </CardTitle>
-              <p className="mt-2 text-sm text-gray-300">
+              <p className="font-light text-[0.875rem] leading-6 md:text-base text-white/50 line-clamp-2 mb-4 mt-2 min-h-12">
+             {project.projectDescription}
+              </p>
+              <p className="mt-2 text-lg text-white ">
                 Start:{" "}
                 <span className="font-medium">
                   {new Date(project.startTime * 1000).toLocaleString()}
                 </span>
               </p>
-              <p className="text-sm text-gray-300">
+              <p className="text-lg text-white">
                 End:{" "}
                 <span className="font-medium">
                   {new Date(project.endTime * 1000).toLocaleString()}
                 </span>
               </p>
+              
               <Link
                 href={`/p?chainId=${chainId}&projectId=${project.address}`}
-                className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
+                className="inline-block mt-4 px-4 py-2  text-white rounded-md transition-colors relative w-full text-center"
               >
-                Learn More
+               <span>
+                <ButtonSvg/>
+                learn more
+
+               </span>
               </Link>
             </CardContent>
           </Card>
