@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { writeContract } from "@wagmi/core";
 import { PlazaFactoryAbi } from "@/utlis/contractsABI/PlazaFactoryAbi";
 import { PlazaFactoryAddress } from "@/utlis/addresses";
