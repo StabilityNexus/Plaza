@@ -32,7 +32,7 @@ type ProjectData = {
   status: ProjectStatus;
 };
 
-export default function MyProjectsPage() {
+export default function MyProjects() {
   const { address: userAddress } = useAccount();
   const chainId = config.state.chainId;
 
@@ -49,29 +49,30 @@ export default function MyProjectsPage() {
 
   useEffect(() => {
     // Only fetch projects if the wallet is connected.
+    console.log(userAddress);
     if (!userAddress) return;
 
     async function fetchProjects() {
       setLoading(true);
       setError(null);
       try {
-        // 1. Get total number of projects
-        const totalProjects = (await publicClient.readContract({
+        // Fetch all projects created by the connected user.
+        const creatorProjects = (await publicClient.readContract({
           address: PlazaFactoryAddress[chainId] as `0x${string}`,
           abi: PlazaFactoryAbi,
-          functionName: "projectCount",
-        })) as number;
+          functionName: "getProjectsByCreator",
+          args: [userAddress],
+        })) as `0x${string}[]`;
 
-        // 2. Loop over each project index
+
+        console.log(creatorProjects);
+
         const allProjects: ProjectData[] = [];
-        for (let i = 1; i <= totalProjects; i++) {
-          const projectAddress = (await publicClient.readContract({
-            address: PlazaFactoryAddress[chainId] as `0x${string}`,
-            abi: PlazaFactoryAbi,
-            functionName: "projects",
-            args: [i],
-          })) as `0x${string}`;
+        // Loop over each project address from the creator mapping.
+        for (let i = 0; i < creatorProjects.length; i++) {
+          const projectAddress = creatorProjects[i];
 
+<<<<<<< HEAD:src/app/MyProjects/page.tsx
           // 3. From each Plaza contract, read relevant info
           const [
             projectName,
@@ -106,10 +107,36 @@ export default function MyProjectsPage() {
               functionName: "status",
             }),
           ])) as [string, string, bigint, bigint, number];
+=======
+          // Fetch project details from each Plaza contract.
+          const [projectName, startTime, endTime, rawStatus] =
+            (await Promise.all([
+              publicClient.readContract({
+                address: projectAddress as `0x${string}`,
+                abi: PlazaAbi,
+                functionName: "projectName",
+              }),
+              publicClient.readContract({
+                address: projectAddress as `0x${string}`,
+                abi: PlazaAbi,
+                functionName: "startTime",
+              }),
+              publicClient.readContract({
+                address: projectAddress as `0x${string}`,
+                abi: PlazaAbi,
+                functionName: "endTime",
+              }),
+              publicClient.readContract({
+                address: projectAddress as `0x${string}`,
+                abi: PlazaAbi,
+                functionName: "status",
+              }),
+            ])) as [string, bigint, bigint, number];
+>>>>>>> 2637dce4ea1d0804f77fb22f8bbfc852afc4e2c3:src/app/myProjects/page.tsx
 
           allProjects.push({
-            id: i,
-            address: projectAddress,
+            id: i+1,
+            address: projectAddress as `0x${string}`,
             projectName,
             projectDescription,
             startTime: Number(startTime),
@@ -118,7 +145,7 @@ export default function MyProjectsPage() {
           });
         }
 
-        // 4. Classify projects as upcoming, ongoing, or past
+        // Classify projects as upcoming, ongoing, or past.
         const now = Math.floor(Date.now() / 1000);
         const upcoming: ProjectData[] = [];
         const ongoing: ProjectData[] = [];
@@ -197,10 +224,35 @@ export default function MyProjectsPage() {
                 <p>{error}</p>
               </div>
             ) : (
+<<<<<<< HEAD:src/app/MyProjects/page.tsx
               <div className="flex flex-col w-full space-y-8">
                 <h1 className="lg:text-3xl text-2xl font-bold">My projects</h1>
                 <Tabs defaultValue="ongoing" className="w-full mt-4">
                   {/* TabsList */}
+=======
+              <Tabs defaultValue="ongoing" className="w-full mt-4">
+                {/* TabsList */}
+                <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
+                  <TabsTrigger
+                    value="past"
+                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
+                  >
+                    Past
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ongoing"
+                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
+                  >
+                    Ongoing
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="upcoming"
+                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
+                  >
+                    Upcoming
+                  </TabsTrigger>
+                </TabsList>
+>>>>>>> 2637dce4ea1d0804f77fb22f8bbfc852afc4e2c3:src/app/myProjects/page.tsx
 
                   <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
                     <TabsTrigger

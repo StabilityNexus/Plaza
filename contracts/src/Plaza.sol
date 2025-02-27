@@ -10,7 +10,7 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
 
     uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3e4;
-    address public constant protocolFeeReceiver = 0xB3cb2589e5D8C451C7D0adF3348f9D198eAd58C9;
+    address public constant protocolFeeReceiver = 0x599B4E3A27C6073E86a4b8dC2D7be92F74F7C232;
 
     string public projectName;
     string public projectDescription;
