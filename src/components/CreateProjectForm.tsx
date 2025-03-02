@@ -18,8 +18,8 @@ interface ProjectFormData {
   projectDescription: string;
   latitude: string;
   longitude: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // Only date in yyyy-mm-dd format
+  endTime: string; // Only date in yyyy-mm-dd format
   targetAmount: string;
 }
 
@@ -38,12 +38,15 @@ export function CreateProjectForm() {
     try {
       const chainId = config.state.chainId;
 
-      const lat = parseFloat(data.latitude.trim());
-      const lon = parseFloat(data.longitude.trim());
+      // Convert string inputs into the expected types:
+      const lat = parseInt(data.latitude.trim());
+      const lon = parseInt(data.longitude.trim());
+      // Since the input type is "date", the time defaults to midnight (00:00)
       const startTime = Math.floor(new Date(data.startTime).getTime() / 1000);
       const endTime = Math.floor(new Date(data.endTime).getTime() / 1000);
       const targetAmount = BigInt(data.targetAmount);
 
+      // Call the createProject function from the PlazaFactory contract.
       const tx = await writeContract(config as any, {
         address: PlazaFactoryAddress[chainId] as `0x${string}`,
         abi: PlazaFactoryAbi,
@@ -55,6 +58,8 @@ export function CreateProjectForm() {
           data.projectDescription,
           lat,
           lon,
+          startTime,
+          endTime,
           targetAmount,
         ],
       });
@@ -65,68 +70,136 @@ export function CreateProjectForm() {
     } catch (error: any) {
       console.error("Error creating project:", error);
       setSubmitStatus("Error creating project.");
-      toast.error(error?.message || "An error occurred while creating the project.");
+      toast.error(
+        error?.message || "An error occurred while creating the project."
+      );
     } finally {
       setLoading(false);
+      // Clear status after a delay.
       setTimeout(() => setSubmitStatus(null), 3000);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-lg mx-auto p-6 rounded-lg shadow-md">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Token Name</Label>
-          <Input id="name" {...register("name", { required: "Token name is required" })} />
-          {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
-        </div>
-        <div>
-          <Label htmlFor="symbol">Token Symbol</Label>
-          <Input id="symbol" {...register("symbol", { required: "Token symbol is required" })} />
-          {errors.symbol && <p className="text-red-500 text-sm">{errors.symbol.message}</p>}
-        </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div>
+        <Label htmlFor="name">Token Name</Label>
+        <Input
+          id="name"
+          {...register("name", { required: "Token name is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+      </div>
+
+      <div>
+        <Label htmlFor="symbol">Token Symbol</Label>
+        <Input
+          id="symbol"
+          {...register("symbol", { required: "Token symbol is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.symbol && (
+          <p className="text-red-500">{errors.symbol.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="projectName">Project Name</Label>
-        <Input id="projectName" {...register("projectName", { required: "Project name is required" })} />
-        {errors.projectName && <p className="text-red-500 text-sm">{errors.projectName.message}</p>}
+        <Input
+          id="projectName"
+          {...register("projectName", { required: "Project name is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.projectName && (
+          <p className="text-red-500">{errors.projectName.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="projectDescription">Project Description</Label>
-        <textarea 
-  className="w-full p-2 border border-gray-300 bg-white text-black rounded-md"
-  {...register("projectDescription", { required: "Project description is required" })}
-/>
-
-        {errors.projectDescription && <p className="text-red-500 text-sm">{errors.projectDescription.message}</p>}
+        <textarea
+          id="projectDescription"
+          {...register("projectDescription", {
+            required: "Project description is required",
+          })}
+          className="w-full p-2 border border-gray-300 bg-white text-black rounded-md"
+          placeholder="Enter project description..."
+        />
+        {errors.projectDescription && (
+          <p className="text-red-500">{errors.projectDescription.message}</p>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="latitude">Latitude</Label>
-          <Input id="latitude" {...register("latitude", { required: "Latitude is required" })} />
-          {errors.latitude && <p className="text-red-500 text-sm">{errors.latitude.message}</p>}
-        </div>
-        <div>
-          <Label htmlFor="longitude">Longitude</Label>
-          <Input id="longitude" {...register("longitude", { required: "Longitude is required" })} />
-          {errors.longitude && <p className="text-red-500 text-sm">{errors.longitude.message}</p>}
-        </div>
+      <div>
+        <Label htmlFor="latitude">Latitude</Label>
+        <Input
+          id="latitude"
+          {...register("latitude", { required: "Latitude is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.latitude && (
+          <p className="text-red-500">{errors.latitude.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="longitude">Longitude</Label>
+        <Input
+          id="longitude"
+          {...register("longitude", { required: "Longitude is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.longitude && (
+          <p className="text-red-500">{errors.longitude.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="startTime">Start Date</Label>
+        <Input
+          id="startTime"
+          type="date"
+          {...register("startTime", { required: "Start date is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.startTime && (
+          <p className="text-red-500">{errors.startTime.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="endTime">End Date</Label>
+        <Input
+          id="endTime"
+          type="date"
+          {...register("endTime", { required: "End date is required" })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.endTime && (
+          <p className="text-red-500">{errors.endTime.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="targetAmount">Target Amount (in wei)</Label>
-        <Input id="targetAmount" {...register("targetAmount", { required: "Target amount is required" })} />
-        {errors.targetAmount && <p className="text-red-500 text-sm">{errors.targetAmount.message}</p>}
+        <Input
+          id="targetAmount"
+          {...register("targetAmount", {
+            required: "Target amount is required",
+          })}
+          className="rounded-md border border-gray-300 bg-white text-black"
+        />
+        {errors.targetAmount && (
+          <p className="text-red-500">{errors.targetAmount.message}</p>
+        )}
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Submitting..." : "Create Project"}
+      <Button type="submit" disabled={loading} className="border border-black">
+        {loading ? "Submitting..." : "Submit"}
       </Button>
 
-      {submitStatus && <p className="text-center text-green-500 mt-2">{submitStatus}</p>}
+      {submitStatus && <p className="text-green-500">{submitStatus}</p>}
       <Toaster />
     </form>
   );

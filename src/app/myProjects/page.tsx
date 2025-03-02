@@ -72,7 +72,6 @@ export default function MyProjects() {
         for (let i = 0; i < creatorProjects.length; i++) {
           const projectAddress = creatorProjects[i];
 
-<<<<<<< HEAD:src/app/MyProjects/page.tsx
           // 3. From each Plaza contract, read relevant info
           const [
             projectName,
@@ -82,57 +81,31 @@ export default function MyProjects() {
             rawStatus,
           ] = (await Promise.all([
             publicClient.readContract({
-              address: projectAddress,
+              address: projectAddress as `0x${string}`,
               abi: PlazaAbi,
               functionName: "projectName",
             }),
             publicClient.readContract({
-              address: projectAddress,
+              address: projectAddress as `0x${string}`,
               abi: PlazaAbi,
               functionName: "projectDescription",
             }),
             publicClient.readContract({
-              address: projectAddress,
+              address: projectAddress as `0x${string}`,
               abi: PlazaAbi,
               functionName: "startTime",
             }),
             publicClient.readContract({
-              address: projectAddress,
+              address: projectAddress as `0x${string}`,
               abi: PlazaAbi,
               functionName: "endTime",
             }),
             publicClient.readContract({
-              address: projectAddress,
+              address: projectAddress as `0x${string}`,
               abi: PlazaAbi,
               functionName: "status",
             }),
           ])) as [string, string, bigint, bigint, number];
-=======
-          // Fetch project details from each Plaza contract.
-          const [projectName, startTime, endTime, rawStatus] =
-            (await Promise.all([
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "projectName",
-              }),
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "startTime",
-              }),
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "endTime",
-              }),
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "status",
-              }),
-            ])) as [string, bigint, bigint, number];
->>>>>>> 2637dce4ea1d0804f77fb22f8bbfc852afc4e2c3:src/app/myProjects/page.tsx
 
           allProjects.push({
             id: i+1,
@@ -224,35 +197,10 @@ export default function MyProjects() {
                 <p>{error}</p>
               </div>
             ) : (
-<<<<<<< HEAD:src/app/MyProjects/page.tsx
               <div className="flex flex-col w-full space-y-8">
                 <h1 className="lg:text-3xl text-2xl font-bold">My projects</h1>
                 <Tabs defaultValue="ongoing" className="w-full mt-4">
                   {/* TabsList */}
-=======
-              <Tabs defaultValue="ongoing" className="w-full mt-4">
-                {/* TabsList */}
-                <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
-                  <TabsTrigger
-                    value="past"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Past
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="ongoing"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Ongoing
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="upcoming"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Upcoming
-                  </TabsTrigger>
-                </TabsList>
->>>>>>> 2637dce4ea1d0804f77fb22f8bbfc852afc4e2c3:src/app/myProjects/page.tsx
 
                   <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
                     <TabsTrigger
