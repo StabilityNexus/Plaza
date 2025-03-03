@@ -14,6 +14,7 @@ import { config } from "@/utlis/config";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectList from "@/components/ProjectList";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Image from "next/image";
 
 enum ProjectStatus {
   ACTIVE = 0,
@@ -25,6 +26,7 @@ type ProjectData = {
   id: number;
   address: `0x${string}`;
   projectName: string;
+  projectDescription: string;
   startTime: number;
   endTime: number;
   status: ProjectStatus;
@@ -70,35 +72,46 @@ export default function MyProjects() {
         for (let i = 0; i < creatorProjects.length; i++) {
           const projectAddress = creatorProjects[i];
 
-          // Fetch project details from each Plaza contract.
-          const [projectName, startTime, endTime, rawStatus] =
-            (await Promise.all([
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "projectName",
-              }),
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "startTime",
-              }),
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "endTime",
-              }),
-              publicClient.readContract({
-                address: projectAddress as `0x${string}`,
-                abi: PlazaAbi,
-                functionName: "status",
-              }),
-            ])) as [string, bigint, bigint, number];
+          // 3. From each Plaza contract, read relevant info
+          const [
+            projectName,
+            projectDescription,
+            startTime,
+            endTime,
+            rawStatus,
+          ] = (await Promise.all([
+            publicClient.readContract({
+              address: projectAddress as `0x${string}`,
+              abi: PlazaAbi,
+              functionName: "projectName",
+            }),
+            publicClient.readContract({
+              address: projectAddress as `0x${string}`,
+              abi: PlazaAbi,
+              functionName: "projectDescription",
+            }),
+            publicClient.readContract({
+              address: projectAddress as `0x${string}`,
+              abi: PlazaAbi,
+              functionName: "startTime",
+            }),
+            publicClient.readContract({
+              address: projectAddress as `0x${string}`,
+              abi: PlazaAbi,
+              functionName: "endTime",
+            }),
+            publicClient.readContract({
+              address: projectAddress as `0x${string}`,
+              abi: PlazaAbi,
+              functionName: "status",
+            }),
+          ])) as [string, string, bigint, bigint, number];
 
           allProjects.push({
             id: i+1,
             address: projectAddress as `0x${string}`,
             projectName,
+            projectDescription,
             startTime: Number(startTime),
             endTime: Number(endTime),
             status: rawStatus,
@@ -144,10 +157,20 @@ export default function MyProjects() {
   }, [userAddress, publicClient, chainId]);
 
   return (
-    <div className="min-h-screen bg-[#0E1624] text-white">
+    <div className="min-h-screen bg-[#000000] text-white">
       {/* Header */}
       <header className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">My Projects</h1>
+        <div className="flex items-center justify-center space-x-2">
+          <Image
+            width={30}
+            height={30}
+            src="/logo.svg"
+            alt="plaza"
+            className=""
+          />
+          <h1 className="text-2xl font-bold">Plaza</h1>
+        </div>
+
         <ConnectButton />
       </header>
 
@@ -174,40 +197,62 @@ export default function MyProjects() {
                 <p>{error}</p>
               </div>
             ) : (
-              <Tabs defaultValue="ongoing" className="w-full mt-4">
-                {/* TabsList */}
-                <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
-                  <TabsTrigger
-                    value="past"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Past
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="ongoing"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Ongoing
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="upcoming"
-                    className="flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md"
-                  >
-                    Upcoming
-                  </TabsTrigger>
-                </TabsList>
+              <div className="flex flex-col w-full space-y-8">
+                <h1 className="lg:text-3xl text-2xl font-bold">My projects</h1>
+                <Tabs defaultValue="ongoing" className="w-full mt-4">
+                  {/* TabsList */}
 
-                {/* TabsContent */}
-                <TabsContent value="ongoing" className="mt-6">
-                  <ProjectList projects={ongoingProjects} />
-                </TabsContent>
-                <TabsContent value="upcoming" className="mt-6">
-                  <ProjectList projects={upcomingProjects} />
-                </TabsContent>
-                <TabsContent value="past" className="mt-6">
-                  <ProjectList projects={pastProjects} />
-                </TabsContent>
-              </Tabs>
+                  <TabsList className="bg-gray-800 p-1 rounded-md flex space-x-1">
+                    <TabsTrigger
+                      value="past"
+                      className="relative flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 
+             data-[state=active]:bg-transparent data-[state=active]:text-white 
+             data-[state=active]:border-2 data-[state=active]:border-transparent 
+             data-[state=active]:bg-gradient-to-r 
+             data-[state=active]:from-[#6EC2CA] data-[state=active]:via-[#663D82] 
+             data-[state=active]:to-[#D84067] 
+             rounded-md"
+                    >
+                      Past
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="ongoing"
+                      className="relative flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 
+             data-[state=active]:bg-transparent data-[state=active]:text-white 
+             data-[state=active]:border-2 data-[state=active]:border-transparent 
+             data-[state=active]:bg-gradient-to-r 
+             data-[state=active]:from-[#6EC2CA] data-[state=active]:via-[#663D82] 
+             data-[state=active]:to-[#D84067] 
+             rounded-md"
+                    >
+                      Ongoing
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="upcoming"
+                      className="relative flex-1 py-2 text-sm text-gray-300 hover:bg-gray-700 
+             data-[state=active]:bg-transparent data-[state=active]:text-white 
+             data-[state=active]:border-2 data-[state=active]:border-transparent 
+             data-[state=active]:bg-gradient-to-r 
+             data-[state=active]:from-[#6EC2CA] data-[state=active]:via-[#663D82] 
+             data-[state=active]:to-[#D84067] 
+             rounded-md"
+                    >
+                      Upcoming
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* TabsContent */}
+                  <TabsContent value="ongoing" className="mt-6">
+                    <ProjectList projects={ongoingProjects} />
+                  </TabsContent>
+                  <TabsContent value="upcoming" className="mt-6">
+                    <ProjectList projects={upcomingProjects} />
+                  </TabsContent>
+                  <TabsContent value="past" className="mt-6">
+                    <ProjectList projects={pastProjects} />
+                  </TabsContent>
+                </Tabs>
+              </div>
             )}
           </>
         )}
