@@ -7,6 +7,8 @@ import { PlazaFactoryAbi } from "@/utlis/contractsABI/PlazaFactoryAbi";
 import { PlazaFactoryAddress } from "@/utlis/addresses";
 import { PlazaAbi } from "@/utlis/contractsABI/PlazaAbi";
 import { config } from "@/utlis/config";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 export type ProjectData = {
   projectAddress: `0x${string}`;
@@ -90,22 +92,48 @@ export default function ExplorerProjects() {
     fetchProjects();
   }, []);
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="h-8 w-8 text-gray-400" />
+        </motion.div>
+        <span className="ml-3 text-gray-400 font-medium">Loading projects...</span>
+      </div>
+    );
+  }
+
+  if (projects.length === 0 && !loading) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-gray-400">No projects found. Create your first project!</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full space-y-4">
-      {loading ? (
-        <div className="text-center text-gray-900 dark:text-white">
-          Loading projects...
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-7xl mx-auto">
-          {projects.map((project, index) => (
-            <CardProject
-              key={`${project.projectAddress}-${index}`}
-              project={project}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <motion.div 
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
+      {projects.map((project) => (
+        <CardProject key={project.projectAddress} project={project} />
+      ))}
+    </motion.div>
   );
 }
