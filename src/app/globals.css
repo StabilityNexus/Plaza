@@ -119,3 +119,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+.pink_gradient {
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  width: 123px;
+  height: 123px;
+  border-radius: 50%;
+
+  background: #D84067;
+  filter: blur(200px);
+}
+
+.blue_gradient {
+  position: absolute;
+  bottom: 0%;
+  right: 0%;
+  width: 123px;
+  height: 123px;
+  border-radius: 50%;
+
+  background: #18b2de;
+  filter: blur(200px);
+}
+.gradient-border {
+  background: linear-gradient(
+    168.82deg,
+    #D84067 1.7%,
+    rgba(155, 111, 238, 0) 27.12%,
+    rgba(123, 127, 234, 0) 61.28%,
+    #1bb2de 99.52%
+  );
+}

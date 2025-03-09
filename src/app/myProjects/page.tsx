@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectList from "@/components/ProjectList";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
+import Logo from "@/components/logo";
 
 enum ProjectStatus {
   ACTIVE = 0,
@@ -64,7 +65,6 @@ export default function MyProjects() {
           args: [userAddress],
         })) as `0x${string}[]`;
 
-
         console.log(creatorProjects);
 
         const allProjects: ProjectData[] = [];
@@ -108,7 +108,7 @@ export default function MyProjects() {
           ])) as [string, string, bigint, bigint, number];
 
           allProjects.push({
-            id: i+1,
+            id: i + 1,
             address: projectAddress as `0x${string}`,
             projectName,
             projectDescription,
@@ -160,16 +160,7 @@ export default function MyProjects() {
     <div className="min-h-screen bg-[#000000] text-white">
       {/* Header */}
       <header className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center justify-center space-x-2">
-          <Image
-            width={30}
-            height={30}
-            src="/logo.svg"
-            alt="plaza"
-            className=""
-          />
-          <h1 className="text-2xl font-bold">Plaza</h1>
-        </div>
+        <Logo />
 
         <ConnectButton />
       </header>

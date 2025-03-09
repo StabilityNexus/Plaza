@@ -6,6 +6,8 @@ import { useAccount, useWalletClient } from "wagmi";
 import { getPublicClient } from "@wagmi/core";
 import { config } from "@/utlis/config";
 import { PlazaAbi } from "@/utlis/contractsABI/PlazaAbi";
+import Image from "next/image";
+import Logo from "@/components/logo";
 
 export default function InteractionClient() {
   const searchParams = useSearchParams();
@@ -271,87 +273,99 @@ export default function InteractionClient() {
 
   // --- MAIN UI ---
   return (
-    <div className="min-h-screen bg-[#0E1624] text-white">
+    <div className="min-h-screen bg-[#0E1624] text-white flex flex-col items-center py-8 px-4 relative">
+      <header className="absolute top-0 left-0 px-6 py-4 flex items-center justify-between">
+        <Logo />
+      </header>
       {/* Page Header */}
-      <header className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Project Details</h1>
+      <header className="border-b border-gray-700 w-full max-w-4xl px-6 py-4 flex items-center justify-between mt-12">
+        <h1 className="text-3xl font-bold text-[#5DA3FA]">Project Details</h1>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Project Details Card */}
-        <div className="bg-[#1B2430] border border-gray-700 rounded-lg p-6 shadow-md mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">
+      <div className="relative md:max-w-[700px] md:min-w-[500px] min-w-full max-w-full gradient-border p-[2px] rounded-3xl mt-8">
+        <main className="w-full min-h-[400px] bg-[#0E1624] backdrop-blur-[4px] rounded-3xl shadow-card lg:p-10 p-5">
+          {/* Project Details Card */}
+          <h2 className="text-2xl font-semibold text-[#F5F7FA] mb-20 text-center">
             {projectName || "Untitled Project"}
           </h2>
 
-          <p className="text-gray-300 mb-2">
-            <span className="font-medium text-white">Start:</span>{" "}
-            {new Date(startTime * 1000).toLocaleString()}
-          </p>
-          <p className="text-gray-300 mb-2">
-            <span className="font-medium text-white">End:</span>{" "}
-            {new Date(endTime * 1000).toLocaleString()}
-          </p>
-          <p className="text-gray-300 mb-2">
-            <span className="font-medium text-white">Latitude:</span> {latitude}
-          </p>
-          <p className="text-gray-300 mb-2">
-            <span className="font-medium text-white">Longitude:</span>{" "}
-            {longitude}
-          </p>
-          <p className="text-gray-300 mt-4">
-            <span className="font-medium text-white">Description:</span>{" "}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-400">
+            <p>
+              <span className="font-medium text-white">📅 Start:</span>{" "}
+              {new Date(startTime * 1000).toLocaleString()}
+            </p>
+            <p>
+              <span className="font-medium text-white">⏳ End:</span>{" "}
+              {new Date(endTime * 1000).toLocaleString()}
+            </p>
+            <p>
+              <span className="font-medium text-white">📍 Latitude:</span>{" "}
+              {latitude}
+            </p>
+            <p>
+              <span className="font-medium text-white">📍 Longitude:</span>{" "}
+              {longitude}
+            </p>
+          </div>
+
+          <p className="text-gray-400 mt-12 text-center text-lg leading-relaxed ">
+            <span className="font-medium text-white">📖 Description:</span>{" "}
             {projectDescription}
           </p>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4">
-          {isOwner ? (
-            <>
-              <button
-                onClick={handleUpdateStatus}
-                disabled={txLoading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
-              >
-                Update Status
-              </button>
-              <button
-                onClick={handleWithdrawFunds}
-                disabled={txLoading}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg"
-              >
-                Withdraw Funds
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleStartVolunteering}
-                disabled={txLoading || isVolunteering}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
-              >
-                Start Contributing
-              </button>
-              <button
-                onClick={handleEndVolunteering}
-                disabled={txLoading || !isVolunteering}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg"
-              >
-                End Contributing
-              </button>
-            </>
-          )}
-        </div>
-
-        {txLoading && (
-          <div className="mt-4 text-center text-yellow-400">
-            Processing transaction...
+          {/* Action Buttons */}
+          <div className="flex flex-col md:flex-row justify-center items-center mt-6 space-y-4 md:space-y-0 md:space-x-4">
+            {isOwner ? (
+              <>
+                <button
+                  onClick={handleUpdateStatus}
+                  disabled={txLoading}
+                  className="lg:px-6 px-4 py-2 lg:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-300"
+                >
+                  Update Status
+                </button>
+                <button
+                  onClick={handleWithdrawFunds}
+                  disabled={txLoading}
+                  className="lg:px-6 px-4 py-2 lg:py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition duration-300"
+                >
+                  Withdraw Funds
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleStartVolunteering}
+                  disabled={txLoading || isVolunteering}
+                  className=" px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition duration-300 lg:text-lg text-base"
+                >
+                  Start Contributing
+                </button>
+                <button
+                  onClick={handleEndVolunteering}
+                  disabled={txLoading || !isVolunteering}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition duration-300 lg:text-lg text-base"
+                >
+                  End Contributing
+                </button>
+              </>
+            )}
           </div>
-        )}
 
-        {error && <div className="mt-4 text-center text-red-500">{error}</div>}
-      </main>
+          {/* Status Messages */}
+          {txLoading && (
+            <div className="mt-4 text-center text-yellow-400 animate-pulse">
+              ⏳ Processing transaction...
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 text-center text-red-500 font-semibold">
+              ⚠️ {error}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
