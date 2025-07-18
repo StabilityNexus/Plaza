@@ -23,9 +23,17 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     ProjectStatus public status;
 
     uint256 public constant PRECISION = 1e6;
-    uint256 public volunteeredSeconds;  // Total volunteered seconds
-    mapping(address => uint256) public volunteerStartTimes;
+    uint256 public participantCount;        // Total number of people who ever participated
+    uint256 public volunteerCount;          // Current number of active volunteers
+    uint256 public contributorCount;        // Total number of people who ever contributed
+    uint256 public volunteeredSeconds;      // Total seconds volunteered by all users
+    
     mapping(address => bool) public isVolunteering;
+    mapping(address => uint256) public volunteerStartTimes;
+    mapping(address => bool) public hasContributed;
+    mapping(address => uint256) public contributionAmounts;
+    mapping(address => uint256) public volunteerSecondsPerParticipant;  // Track volunteer seconds per participant
+    mapping(address => bool) public isBlacklisted;                      // Blacklist mapping
 
     event VolunteerStarted(address indexed volunteer, uint256 startTime);
     event VolunteerEnded(address indexed volunteer, uint256 duration, uint256 tokensAwarded);
@@ -34,6 +42,9 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     event ProtocolFeeCollected(uint256 feeAmount);
     event ProtocolFeeReceiverUpdated(address indexed newReceiver);
     event FundsWithdrawn(uint256 amount);
+    event ParticipantAdded(address indexed participant);
+    event ParticipantBlacklisted(address indexed participant);
+    event ParticipantUnblacklisted(address indexed participant);
 
     constructor(
         string memory _name,
@@ -80,42 +91,60 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         _;
     }
 
-    function startVolunteering() external onlyActive {
-        require(!isVolunteering[msg.sender], "Already volunteering");
+    function startVolunteering(address participant) external onlyActive {
+        require(!isBlacklisted[participant], "Participant is blacklisted");
+        require(!isVolunteering[participant], "Already volunteering");
         
-        volunteerStartTimes[msg.sender] = block.timestamp;
-        isVolunteering[msg.sender] = true;
+        if (balanceOf(participant) == 0 && !hasContributed[participant]) {
+            participantCount++;
+            emit ParticipantAdded(participant);
+        }
         
-        emit VolunteerStarted(msg.sender, block.timestamp);
+        volunteerStartTimes[participant] = block.timestamp;
+        isVolunteering[participant] = true;
+        volunteerCount++;
+        
+        emit VolunteerStarted(participant, block.timestamp);
     }
 
-    function endVolunteering() external nonReentrant {
-        require(isVolunteering[msg.sender], "Not currently volunteering");
-        uint256 startTimeOfUser = volunteerStartTimes[msg.sender];
+    function endVolunteering(address participant) external nonReentrant {
+        require(isVolunteering[participant], "Not currently volunteering");
+        uint256 startTimeOfUser = volunteerStartTimes[participant];
         uint256 duration = block.timestamp - startTimeOfUser;
         
         uint256 tokensToMint = (duration * PRECISION) / 3600;
         
-        isVolunteering[msg.sender] = false;
+        isVolunteering[participant] = false;
+        volunteerCount--;
         volunteeredSeconds += duration;
+        volunteerSecondsPerParticipant[participant] += duration;  // Track individual volunteer seconds
         
-        _mint(msg.sender, tokensToMint);
+        _mint(participant, tokensToMint);
         
-        emit VolunteerEnded(msg.sender, duration, tokensToMint);
+        emit VolunteerEnded(participant, duration, tokensToMint);
     }
 
     function contribute() external payable onlyActive nonReentrant {
         require(targetAmount > 0, "Project does not accept funds");
         require(msg.value > 0, "Must contribute some amount");
         
-        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
+        if (balanceOf(msg.sender) == 0 && !isVolunteering[msg.sender]) {
+            participantCount++;
+            emit ParticipantAdded(msg.sender);
+        }
         
-        // Sending protocol fee to fee receiver
+        if (!hasContributed[msg.sender]) {
+            contributorCount++;
+            hasContributed[msg.sender] = true;
+        }
+
+        contributionAmounts[msg.sender] += msg.value;      // Track individual contribution amount
+        
+        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
         (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
         require(feeSuccess, "Protocol fee transfer failed");
 
         raisedAmount += msg.value;
-        
         _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
         
         emit FundsContributed(msg.sender, msg.value, msg.value);
@@ -136,6 +165,18 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         require(_status != status, "Status already set");
         status = _status;
         emit ProjectStatusUpdated(_status);
+    }
+
+    function blacklistParticipant(address participant) external onlyOwner {
+        require(!isBlacklisted[participant], "Participant already blacklisted");        
+        isBlacklisted[participant] = true;
+        emit ParticipantBlacklisted(participant);
+    }
+
+    function unblacklistParticipant(address participant) external onlyOwner {
+        require(isBlacklisted[participant], "Participant not blacklisted");
+        isBlacklisted[participant] = false;
+        emit ParticipantUnblacklisted(participant);
     }
 
     function balance() public view returns (uint256) {
