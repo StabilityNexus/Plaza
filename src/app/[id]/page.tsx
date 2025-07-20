@@ -1,15 +1,14 @@
-import { notFound } from "next/navigation";
-import InteractionClient from "./InteractionClient";
-import { Suspense } from "react";
+import InteractionClient from './InteractionClient'
+import { Suspense } from 'react'
 
 export async function generateStaticParams() {
-  return [{ projectId: "p" }];
+  return [{ id: 'p' }]
 }
 
-export default function VaultPage() {
+export default function HackathonPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex items-center justify-center py-12">Loading...</div>}>
       <InteractionClient />
     </Suspense>
-  );
+  )
 }

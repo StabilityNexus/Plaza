@@ -13,6 +13,6 @@ if (!projectId) {
 export const config = getDefaultConfig({
   appName: "Plaza",
   projectId: process.env.NEXT_PUBLIC_PROJECT_ID ?? "",
-  chains: [ethereumClassic],
+  chains: [scrollSepolia], // Only support Scroll Sepolia (534351)
   ssr: true,
 });

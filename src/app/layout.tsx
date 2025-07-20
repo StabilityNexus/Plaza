@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@rainbow-me/rainbowkit/styles.css";
-import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { WalletProvider } from "@/providers/WalletProvider";
+import Header from "@/components/Header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +15,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const metadata = {
+  title: "Plaza - Decentralized Project Hub",
+  description: "Discover and interact with blockchain projects in a spatial interface",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,9 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={geistSans.className} suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning>
         <WalletProvider>
           <ThemeProvider>
+            <Header />
             {children}
           </ThemeProvider>
         </WalletProvider>
