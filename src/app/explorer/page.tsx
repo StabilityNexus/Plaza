@@ -1,83 +1,63 @@
 "use client";
 
+import { useState } from "react";
+import { motion } from "framer-motion";
 import ExplorerProjects from "@/components/Explorer/ExplorerProjects";
-import { Button } from "@/components/ui/button";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { PlusCircle, Wallet } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Button from "@/components/Button";
 
-export default function ExplorerPage() {
-  const router = useRouter();
-
-  const handleCreateProject = () => {
-    router.push("/createProject");
-  };
-
-  const handleYourProjects = () => {
-    router.push("/myProjects");
-  };
+export default function Explorer() {
+  const [searchTerm, setSearchTerm] = useState("");
 
   return (
-    <div className="w-full pt-6 bg-gray-50 dark:bg-black">
-      <main className="container mx-auto px-4 py-8">
-        <div className="w-full">
-          <div className="flex justify-between items-center pt-14 mb-6">
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <h1 className="text-4xl font-extrabold tracking-tight dark:text-gray-200 text-gray-900">
-                  Project Archive
-                </h1>
-                <ConnectButton />
-              </div>
-              <p className="dark:text-purple-50 text-gray-900 text-lg pl-1">
-                Welcome to the central repository for accessing all projects.
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-12">
-            <h2 className="dark:text-yellow-400 text-gray-900 font-bold mb-4 text-xl">
-              Quick Links:
-            </h2>
-            <div className="grid md:grid-cols-6 gap-4">
-              <Button
-                variant="outline"
-                className="flex gap-3 h-auto p-4 dark:bg-zinc-900 bg-white dark:hover:border-purple-500 hover:border-yellow-400 duration-200"
-                onClick={handleYourProjects}
-              >
-                <Wallet className="h-5 w-5 dark:text-purple-400 text-purple-600" />
-                <div className="text-left">
-                  <div className="font-semibold dark:text-white text-gray-900">
-                    Your Projects
-                  </div>
-                  <div className="text-sm dark:text-white text-gray-900">
-                    View your active projects
-                  </div>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="flex gap-3 h-auto p-4 dark:bg-zinc-900 bg-white dark:hover:border-purple-500 hover:border-yellow-400 duration-200"
-                onClick={handleCreateProject}
-              >
-                <PlusCircle className="h-5 w-5 dark:text-purple-400 text-purple-600" />
-                <div className="text-left">
-                  <div className="font-semibold dark:text-white text-gray-900">
-                    Create Project
-                  </div>
-                  <div className="text-sm dark:text-white text-gray-900">
-                    Create your new project
-                  </div>
-                </div>
-              </Button>
-            </div>
-          </div>
-          <div className="w-full flex justify-center pb-[20vh] overflow-x-hidden">
-            <ExplorerProjects />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+      <div className="container mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <motion.h1 
+            className="text-4xl md:text-6xl font-bold text-gray-900 mb-4"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            Explore Projects
+          </motion.h1>
+          <motion.p 
+            className="text-lg text-gray-600 max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            Discover amazing blockchain projects from our community
+          </motion.p>
         </div>
-      </main>
+
+        {/* Search */}
+        <div className="max-w-md mx-auto mb-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <input
+              type="text"
+              placeholder="Search projects..."
+              className="w-full px-4 py-3 rounded-lg bg-white border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </motion.div>
+        </div>
+
+        {/* Projects */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <ExplorerProjects searchTerm={searchTerm} />
+        </motion.div>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { Plaza } from "./Plaza.sol";
 contract PlazaFactory is Ownable {
     
     mapping(address => Plaza[]) public creatorToProjects;
+    mapping(address => uint256) public creatorToTotalProjects;
+
     Plaza[] public allProjects;
     uint256 public projectCount;
 
@@ -48,8 +50,9 @@ contract PlazaFactory is Ownable {
         );
 
         allProjects.push(newProject);
-
+        totalProjects++;
         creatorToProjects[msg.sender].push(newProject);
+        creatorToTotalProjects[msg.sender]++;
 
         emit ProjectCreated(
             projectCount,
