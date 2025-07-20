@@ -5,12 +5,9 @@ import MapComponent from "@/components/map/map";
 import { Token } from "@/types/types";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import ThemeButton from "../theme-button";
-import RainbowBorderComponent from "../rainbow-border";
 import Info from "../info";
 import { useToast } from "@/hooks/use-toast";
 import NexusLogo from "@/assets/nexusLogo.png";
@@ -18,9 +15,7 @@ import Button from "@/components/Button";
 import Link from "next/link";
 
 export default function PlayableMap() {
-  const { toast } = useToast();
   const router = useRouter(); // Initialize the router
-  const [isLoading, setIsLoading] = useState(false);
 
   // Token markers
   const tokens = useMemo(
@@ -118,11 +113,6 @@ export default function PlayableMap() {
     }),
     [tokens, currentUser, handleTokenClick]
   );
-
-  const handleClaim = async () => {
-    // Add any additional logic (e.g., API calls) if necessary
-    router.push("/mint"); // Redirect to /mint
-  };
 
   return (
     <>

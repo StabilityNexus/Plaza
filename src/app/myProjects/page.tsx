@@ -32,7 +32,7 @@ export default function MyProjects() {
   // Get user's project addresses directly from the factory
   const { data: userProjectAddresses, error: userProjectsError } = useReadContract({
     address: PlazaFactoryAddress[chainId] as `0x${string}`,
-    abi: PlazaFactoryAbi as any,
+    abi: PlazaFactoryAbi,
     functionName: "getProjectsByCreator",
     args: [userAddress || "0x0000000000000000000000000000000000000000"],
   });
@@ -68,42 +68,42 @@ export default function MyProjects() {
     contracts: validAddresses.flatMap((address) => [
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "projectName",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "projectDescription",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "owner",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "startTime",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "endTime",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "targetAmount",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "raisedAmount",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "status",
       },
     ]),
@@ -303,7 +303,7 @@ export default function MyProjects() {
                 No Projects Yet
               </h3>
               <p className="text-gray-600 mb-4">
-                You haven't created any projects yet. Start by creating your first project!
+                You haven&apos;t created any projects yet. Start by creating your first project!
               </p>
               <Link href="/createProject">
                 <Button>+ Create Your First Project</Button>

@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import ExplorerProjects from "@/components/Explorer/ExplorerProjects";
-import Link from "next/link";
-import Button from "@/components/Button";
 
 export default function Explorer() {
   const [searchTerm, setSearchTerm] = useState("");

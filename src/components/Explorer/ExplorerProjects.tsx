@@ -35,7 +35,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
   // Get project count from PlazaFactory
   const { data: projectCount, error: projectCountError } = useReadContract({
     address: PlazaFactoryAddress[chainId] as `0x${string}`,
-    abi: PlazaFactoryAbi as any,
+    abi: PlazaFactoryAbi,
     functionName: "projectCount",
   });
 
@@ -66,7 +66,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
   const { data: projectAddresses } = useReadContracts({
     contracts: projectIndexes.map((index) => ({
       address: PlazaFactoryAddress[chainId] as `0x${string}`,
-      abi: PlazaFactoryAbi as any,
+      abi: PlazaFactoryAbi,
       functionName: "allProjects",
       args: [BigInt(index)],
     })),
@@ -86,42 +86,42 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
     contracts: validAddresses.flatMap((address) => [
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "projectName",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "projectDescription",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "owner",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "startTime",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "endTime",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "targetAmount",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "raisedAmount",
       },
       {
         address,
-        abi: PlazaAbi as any,
+        abi: PlazaAbi,
         functionName: "status",
       },
     ]),
