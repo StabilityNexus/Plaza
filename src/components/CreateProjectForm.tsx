@@ -3,14 +3,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Button from "./Button";
 import LocationPicker from "./LocationPicker";
 import { useWriteContract, useWaitForTransactionReceipt, useAccount, useChainId, useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { PlazaFactoryAddress } from "@/utlis/addresses";
 import { PlazaFactoryAbi } from "@/utlis/contractsABI/PlazaFactoryAbi";
-import { config } from "@/utlis/config";
 import { parseEther } from "viem";
 
 interface FormData {
@@ -143,7 +141,7 @@ export default function CreateProjectForm() {
 
       await writeContract({
         address: PlazaFactoryAddress[chainId] as `0x${string}`,
-        abi: PlazaFactoryAbi as any,
+        abi: PlazaFactoryAbi,
         functionName: "createProject",
         args: [
           tokenName,

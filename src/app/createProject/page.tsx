@@ -2,9 +2,6 @@
 
 import { motion } from "framer-motion";
 import CreateProjectForm from "@/components/CreateProjectForm";
-import Button from "@/components/Button";
-import Link from "next/link";
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function CreateProject() {
   return (

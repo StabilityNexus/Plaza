@@ -11,12 +11,6 @@ import Button from "@/components/Button";
 import Link from "next/link";
 import { formatEther, parseEther } from "viem";
 
-interface ProjectStatus {
-  ACTIVE: 0;
-  COMPLETED: 1;
-  CANCELLED: 2;
-}
-
 export default function InteractionClient() {
   const searchParams = useSearchParams();
   const { address: userAddress } = useAccount();

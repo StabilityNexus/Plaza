@@ -1,11 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import PlayableMap from "@/components/map/playable-map";
-import Button from "@/components/Button";
 
 export default function Home() {
   return (

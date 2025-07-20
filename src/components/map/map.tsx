@@ -4,7 +4,7 @@ import mapboxgl from "mapbox-gl";
 import { useRef, useEffect } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Token, User } from "@/types/types"; 
-import { createPlayerMarker, createTokenMarker } from "@/utlis/markers"; 
+import { createTokenMarker } from "@/utlis/markers"; 
 
 interface MapComponentProps {
   tokens: Token[];
