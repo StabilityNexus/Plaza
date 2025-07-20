@@ -64,6 +64,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
   }, [projectCount]);
   
   const { data: projectAddresses } = useReadContracts({
+    // @ts-expect-error - ABI type compatibility issue with wagmi
     contracts: projectIndexes.map((index) => ({
       address: PlazaFactoryAddress[chainId] as `0x${string}`,
       abi: PlazaFactoryAbi,
@@ -83,6 +84,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
   }, [projectAddresses]);
 
   const { data: projectDetails } = useReadContracts({
+    // @ts-expect-error - ABI type compatibility issue with wagmi
     contracts: validAddresses.flatMap((address) => [
       {
         address,
