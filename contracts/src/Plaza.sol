@@ -23,9 +23,17 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     ProjectStatus public status;
 
     uint256 public constant PRECISION = 1e6;
-    uint256 public volunteeredSeconds;  // Total volunteered seconds
-    mapping(address => uint256) public volunteerStartTimes;
+    uint256 public participantCount;        // Total number of people who ever participated
+    uint256 public volunteerCount;          // Current number of active volunteers
+    uint256 public contributorCount;        // Total number of people who ever contributed
+    uint256 public volunteeredSeconds;      // Total seconds volunteered by all users
+    
     mapping(address => bool) public isVolunteering;
+    mapping(address => uint256) public volunteerStartTimes;
+    mapping(address => bool) public hasContributed;
+    mapping(address => uint256) public contributionAmounts;
+    mapping(address => uint256) public volunteerSecondsPerParticipant;  // Track volunteer seconds per participant
+    mapping(address => bool) public isBlacklisted;                      // Blacklist mapping
 
     event VolunteerStarted(address indexed volunteer, uint256 startTime);
     event VolunteerEnded(address indexed volunteer, uint256 duration, uint256 tokensAwarded);
@@ -34,6 +42,10 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
     event ProtocolFeeCollected(uint256 feeAmount);
     event ProtocolFeeReceiverUpdated(address indexed newReceiver);
     event FundsWithdrawn(uint256 amount);
+    event ParticipantAdded(address indexed participant);
+    event ParticipantBlacklisted(address indexed participant);
+    event ParticipantUnblacklisted(address indexed participant);
+    event TokensMinted(address indexed recipient, uint256 amount, string reason);
 
     constructor(
         string memory _name,
@@ -57,18 +69,12 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         status = ProjectStatus.ACTIVE; 
     } 
 
-    /**
-     * @dev Prevents direct ETH transfers to the contract.
-     * Users must use the contribute() function to send funds.
-     */
+    /** @dev Prevents direct ETH transfers to the contract. Users must use the contribute() function to send funds. */
     receive() external payable {
         revert("Use contribute() to send funds");
     }
 
-    /**
-     * @dev Prevents fallback calls to the contract.
-     * This ensures users can't accidentally send funds through fallback.
-     */
+    /** @dev Prevents fallback calls to the contract. This ensures users can't accidentally send funds through fallback. */
     fallback() external payable {
         revert("Function does not exist");
     }
@@ -80,45 +86,58 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         _;
     }
 
-    function startVolunteering() external onlyActive {
-        require(!isVolunteering[msg.sender], "Already volunteering");
+    function startVolunteering(address participant) external onlyActive {
+        require(!isBlacklisted[participant], "Participant is blacklisted");
+        require(!isVolunteering[participant], "Already volunteering");
         
-        volunteerStartTimes[msg.sender] = block.timestamp;
-        isVolunteering[msg.sender] = true;
+        if (balanceOf(participant) == 0 && !hasContributed[participant]) {
+            participantCount++;
+            emit ParticipantAdded(participant);
+        }
         
-        emit VolunteerStarted(msg.sender, block.timestamp);
+        volunteerStartTimes[participant] = block.timestamp;
+        isVolunteering[participant] = true;
+        volunteerCount++;
+        
+        emit VolunteerStarted(participant, block.timestamp);
     }
 
-    function endVolunteering() external nonReentrant {
-        require(isVolunteering[msg.sender], "Not currently volunteering");
-        uint256 startTimeOfUser = volunteerStartTimes[msg.sender];
+    function endVolunteering(address participant) external nonReentrant {
+        require(isVolunteering[participant], "Not currently volunteering");
+        uint256 startTimeOfUser = volunteerStartTimes[participant];
         uint256 duration = block.timestamp - startTimeOfUser;
         
-        uint256 tokensToMint = (duration * PRECISION) / 3600;
-        
-        isVolunteering[msg.sender] = false;
+        isVolunteering[participant] = false;
+        volunteerCount--;
         volunteeredSeconds += duration;
+        volunteerSecondsPerParticipant[participant] += duration;  // Track individual volunteer seconds
         
-        _mint(msg.sender, tokensToMint);
-        
-        emit VolunteerEnded(msg.sender, duration, tokensToMint);
+        emit VolunteerEnded(participant, duration, 0); // No tokens minted automatically
     }
 
     function contribute() external payable onlyActive nonReentrant {
         require(targetAmount > 0, "Project does not accept funds");
         require(msg.value > 0, "Must contribute some amount");
         
-        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
+        if (balanceOf(msg.sender) == 0 && !isVolunteering[msg.sender]) {
+            participantCount++;
+            emit ParticipantAdded(msg.sender);
+        }
         
-        // Sending protocol fee to fee receiver
+        if (!hasContributed[msg.sender]) {
+            contributorCount++;
+            hasContributed[msg.sender] = true;
+        }
+
+        contributionAmounts[msg.sender] += msg.value;      // Track individual contribution amount
+        
+        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
         (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
         require(feeSuccess, "Protocol fee transfer failed");
 
         raisedAmount += msg.value;
         
-        _mint(msg.sender, msg.value);        // Still minting tokens based on full contribution
-        
-        emit FundsContributed(msg.sender, msg.value, msg.value);
+        emit FundsContributed(msg.sender, msg.value, 0); // No tokens minted automatically
         emit ProtocolFeeCollected(protocolFee);
     }
 
@@ -138,12 +157,37 @@ contract Plaza is ERC20, Ownable, ReentrancyGuard {
         emit ProjectStatusUpdated(_status);
     }
 
-    function balance() public view returns (uint256) {
-        return address(this).balance;
+    function blacklistParticipant(address participant) external onlyOwner {
+        require(!isBlacklisted[participant], "Participant already blacklisted");        
+        isBlacklisted[participant] = true;
+        emit ParticipantBlacklisted(participant);
     }
 
-    function isFundingGoalReached() public view returns (bool) {
-        return targetAmount <= raisedAmount;
+    function unblacklistParticipant(address participant) external onlyOwner {
+        require(isBlacklisted[participant], "Participant not blacklisted");
+        isBlacklisted[participant] = false;
+        emit ParticipantUnblacklisted(participant);
     }
+
+    /** @dev Allows the project owner to mint tokens to any address */
+    function mintTokens(address recipient, uint256 amount, string memory reason) external onlyOwner {
+        require(amount > 0, "Amount must be greater than 0");
+        require(recipient != address(0), "Invalid recipient address");
+        
+        _mint(recipient, amount);
+        emit TokensMinted(recipient, amount, reason);
+    }
+
+    /** @dev Suggests token amount based on volunteering time and contributions */
+    function suggestTokenAmount(address participant) external view returns ( uint256 suggestedAmount, uint256 volunteerTokens, uint256 contributionTokens
+    ) {
+        volunteerTokens = (volunteerSecondsPerParticipant[participant] * PRECISION) / 3600;    // Calculate tokens based on volunteer time (1 hour = PRECISION tokens)
+        contributionTokens = contributionAmounts[participant];                                  // Calculate tokens based on contributions (1:1 ratio)
+        suggestedAmount = volunteerTokens + contributionTokens;
+        return (suggestedAmount, volunteerTokens, contributionTokens);
+    }
+
+    function balance() public view returns (uint256) { return address(this).balance; }
+    function isFundingGoalReached() public view returns (bool) { return targetAmount <= raisedAmount; }
 }
 

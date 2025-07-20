@@ -9,7 +9,7 @@ export interface InfoType {
   tokenImage: string;
   tokenName: string;
   tokenType: string;
-  timeAgo: string;
+  timeAgo?: string;
   shareText?: string;
   description: string[];
   rewardAmount: string;
@@ -21,21 +21,19 @@ const Info: FunctionComponent<InfoType> = ({
   tokenImage,
   tokenName,
   tokenType,
-  timeAgo,
-  shareText,
   description,
   rewardAmount,
   rewardSymbol,
 }) => {
   return (
     <div
-      className={`flex flex-col items-center gap-6 text-primary ${className}`}
+      className={`flex flex-col items-center gap-6 text-gray-800 ${className}`}
     >
       {/* Token Image */}
-      <div className="relative w-32 h-32">
+      <div className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-lg">
         <Image
-          alt="TokenPic"
-          className="rounded-tl-3xl rounded-tr-[81px] rounded-b-[81px] object-cover"
+          alt={`${tokenName} token`}
+          className="object-cover"
           src={tokenImage}
           fill
           priority
@@ -46,21 +44,20 @@ const Info: FunctionComponent<InfoType> = ({
       <div className="w-full flex flex-col items-center gap-4">
         {/* Token Name and Type */}
         <div className="flex flex-col items-center gap-2">
-          <div className="text-2xl font-bold">{tokenName}</div>
-          <div className="rounded-[81px] bg-purple-400 py-1 px-3 text-sm text-highlight">
+          <div className="text-2xl font-bold text-center">{tokenName}</div>
+          <div className="rounded-full bg-gradient-to-r from-purple-500 to-blue-500 py-2 px-4 text-sm text-white font-medium">
             {tokenType}
           </div>
         </div>
 
-        {/* {shareText && (
-          <div className="text-sm">
-            <span className="opacity-80">Share</span> {shareText}
-          </div>
-        )} */}
-
-        <p className="text-sm max-w-[90%]">{description}</p>
-
         {/* Description */}
+        <div className="text-center space-y-2">
+          {description.map((desc, index) => (
+            <p key={index} className="text-sm text-gray-600">
+              {desc}
+            </p>
+          ))}
+        </div>
 
         {/* Reward Badge */}
         <div className="w-fit mt-2">

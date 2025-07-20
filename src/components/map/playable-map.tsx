@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter
 import MapComponent from "@/components/map/map";
+import { Token } from "@/types/types";
 import {
   Dialog,
   DialogClose,
@@ -30,6 +31,7 @@ export default function PlayableMap() {
         longitude: 75.90381648295603,
         symbol: "EME",
         name: "Emerald",
+        logoUrl: "/assets/nexuslogo.png",
         backgroundColor: "#8A2BE2",
       },
       {
@@ -38,6 +40,7 @@ export default function PlayableMap() {
         longitude: 75.92381648295603,
         symbol: "RUB",
         name: "Ruby",
+        logoUrl: "/assets/nexuslogo.png",
         backgroundColor: "#8A2BE2",
       },
       {
@@ -46,6 +49,7 @@ export default function PlayableMap() {
         longitude: 75.7777,
         symbol: "SHIB",
         name: "Shiba",
+        logoUrl: "/assets/nexuslogo.png",
         backgroundColor: "#8A2BE2",
       },
       {
@@ -54,6 +58,7 @@ export default function PlayableMap() {
         longitude: 75.92381648295603,
         symbol: "LNM",
         name: "LNM Hacks",
+        logoUrl: "/assets/nexuslogo.png",
         backgroundColor: "#8A2BE2",
       },
     ],
@@ -76,7 +81,7 @@ export default function PlayableMap() {
     selectedItem: null,
   });
 
-  const handleTokenClick = useCallback((token) => {
+  const handleTokenClick = useCallback((token: Token) => {
     setModalState({
       isOpen: true,
       selectedItem: token,

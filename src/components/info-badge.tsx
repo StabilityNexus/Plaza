@@ -1,12 +1,13 @@
 "use client";
-import React, { CSSProperties } from "react";
+import React from "react";
+import Image from "next/image";
 
 interface InfoBadgeProps {
   iconSrc: string; // Source for the icon image
-  amount: string | number; // Display amount
+  amount: string; // Display amount
   tokenSymbol: string; // Token symbol
-  description?: string; // Optional description text (e.g., "for grabs")
-  iconSize?: CSSProperties["width"]; // Optional icon size (defaults to 1rem if not provided)
+  description: string; // Optional description text (e.g., "for grabs")
+  iconSize?: string; // Optional icon size (defaults to "1rem" if not provided)
   className?: string; // Optional class name for additional styling
 }
 
@@ -14,36 +15,27 @@ const InfoBadge: React.FC<InfoBadgeProps> = ({
   iconSrc,
   amount,
   tokenSymbol,
-  description = "for grabs",
+  description,
   iconSize = "1rem",
   className = "",
-  
 }) => {
   return (
     <div
-      className={`rounded-sm border-primary border-[1px] border-solid flex flex-row items-center justify-start p-[0.25rem] gap-[0.125rem] ${className}`}
+      className={`flex items-center gap-3 bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-200 rounded-full py-2 px-4 shadow-sm ${className}`}
     >
-      <img
-        className="relative overflow-hidden shrink-0"
-        loading="lazy"
-        alt="icon"
-        src={iconSrc}
-        style={{
-          height: iconSize,
-          width: iconSize,
-        }}
-      />
-      <div className="relative">
-        {amount}
+      <div className="relative" style={{ width: iconSize, height: iconSize }}>
+        <Image
+          src={iconSrc}
+          alt="Reward icon"
+          fill
+          className="object-contain"
+        />
       </div>
-      <b className="relative" >
-        {tokenSymbol}
-      </b>
-      {description && (
-        <div className="relative" >
-          {description}
-        </div>
-      )}
+      <div className="flex items-center gap-1 text-sm font-medium text-amber-800">
+        <span className="font-bold">{amount}</span>
+        <span>{tokenSymbol}</span>
+        <span className="text-amber-600">{description}</span>
+      </div>
     </div>
   );
 };
