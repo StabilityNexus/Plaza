@@ -65,6 +65,7 @@ export default function MyProjects() {
 
   // Get project details for each address
   const { data: projectDetails } = useReadContracts({
+    // @ts-expect-error - ABI type compatibility issue with wagmi
     contracts: validAddresses.flatMap((address) => [
       {
         address,
