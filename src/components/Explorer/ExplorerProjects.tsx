@@ -126,6 +126,21 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
         abi: PlazaAbi,
         functionName: "status",
       },
+      {
+        address,
+        abi: PlazaAbi,
+        functionName: "participantCount",
+      },
+      {
+        address,
+        abi: PlazaAbi,
+        functionName: "contributorCount",
+      },
+      {
+        address,
+        abi: PlazaAbi,
+        functionName: "volunteerCount",
+      },
     ]),
   });
 
@@ -140,7 +155,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
       const processedProjects: Project[] = [];
       
       for (let i = 0; i < validAddresses.length; i++) {
-        const baseIndex = i * 8; // 8 calls per project
+        const baseIndex = i * 11; // 11 calls per project now (added 3 more)
         const address = validAddresses[i];
         
         console.log(`ExplorerProjects processing project ${i} at address ${address}`);
@@ -154,6 +169,9 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
         const targetAmountData = projectDetails[baseIndex + 5];
         const raisedAmountData = projectDetails[baseIndex + 6];
         const statusData = projectDetails[baseIndex + 7];
+        const participantCountData = projectDetails[baseIndex + 8];
+        const contributorCountData = projectDetails[baseIndex + 9];
+        const volunteerCountData = projectDetails[baseIndex + 10];
 
         console.log(`ExplorerProjects project ${i} data status:`, {
           name: nameData?.status,
@@ -163,7 +181,10 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
           endTime: endTimeData?.status,
           targetAmount: targetAmountData?.status,
           raisedAmount: raisedAmountData?.status,
-          status: statusData?.status
+          status: statusData?.status,
+          participantCount: participantCountData?.status,
+          contributorCount: contributorCountData?.status,
+          volunteerCount: volunteerCountData?.status
         });
 
         // Simplified validation - only check for essential data
@@ -176,6 +197,9 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
           const targetAmount = targetAmountData?.result as bigint || BigInt(0);
           const raisedAmount = raisedAmountData?.result as bigint || BigInt(0);
           const status = statusData?.result as number || 0;
+          const participantCount = participantCountData?.result as bigint || BigInt(0);
+          const contributorCount = contributorCountData?.result as bigint || BigInt(0);
+          const volunteerCount = volunteerCountData?.result as bigint || BigInt(0);
 
           console.log(`ExplorerProjects project ${i} details:`, {
             name,
@@ -185,7 +209,10 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
             endTime: Number(endTime),
             targetAmount: Number(targetAmount),
             raisedAmount: Number(raisedAmount),
-            status
+            status,
+            participantCount: Number(participantCount),
+            contributorCount: Number(contributorCount),
+            volunteerCount: Number(volunteerCount)
           });
 
           // Determine project status
@@ -206,11 +233,6 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
             projectStatus = "inactive"; // CANCELLED
           }
 
-          // Generate a stable participants count based on the contract address
-          // This creates a consistent value for each project across renders
-          const addressSum = address.slice(2).split('').reduce((sum: number, char: string) => sum + parseInt(char, 16), 0);
-          const participants = (addressSum % 47) + 3; // Range: 3-49 participants
-
           processedProjects.push({
             id: address,
             name,
@@ -218,7 +240,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
             status: projectStatus,
             creator,
             createdAt: new Date(Number(startTime) * 1000).toISOString().split('T')[0],
-            participants,
+            participants: Number(participantCount), // Use real participant count
             rewards: `${Number(targetAmount) / 1e18} ETH`, // Assuming 18 decimals
             address,
           });
@@ -248,8 +270,7 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
       setFilteredProjects(projects);
     } else {
       const filtered = projects.filter(project =>
-        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+        project.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredProjects(filtered);
     }
@@ -333,7 +354,6 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
 
   return (
     <div className="space-y-8">
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.map((project, index) => (
           <motion.div
@@ -359,13 +379,8 @@ export default function ExplorerProjects({ searchTerm }: ExplorerProjectsProps) 
                     </span>
                   </div>
 
-                  {/* Description */}
-                  <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">
-                    {project.description}
-                  </p>
-
                   {/* Stats */}
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-4 flex-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Participants:</span>
                       <span className="font-medium text-gray-900">{project.participants}</span>

@@ -19,6 +19,8 @@ interface Project {
   creator: string;
   participants: number;
   rewards: string;
+  targetAmount: string;
+  raisedAmount: string;
   address?: string;
 }
 
@@ -107,6 +109,21 @@ export default function MyProjects() {
         abi: PlazaAbi,
         functionName: "status",
       },
+      {
+        address,
+        abi: PlazaAbi,
+        functionName: "participantCount",
+      },
+      {
+        address,
+        abi: PlazaAbi,
+        functionName: "contributorCount",
+      },
+      {
+        address,
+        abi: PlazaAbi,
+        functionName: "volunteerCount",
+      },
     ]),
   });
 
@@ -122,7 +139,7 @@ export default function MyProjects() {
       const processedProjects: Project[] = [];
       
       for (let i = 0; i < validAddresses.length; i++) {
-        const baseIndex = i * 8; // 8 calls per project
+        const baseIndex = i * 11; // 11 calls per project now (added 3 more)
         const address = validAddresses[i];
         
         console.log(`MyProjects processing project ${i} at address ${address}`);
@@ -136,6 +153,9 @@ export default function MyProjects() {
         const targetAmountData = projectDetails[baseIndex + 5];
         const raisedAmountData = projectDetails[baseIndex + 6];
         const statusData = projectDetails[baseIndex + 7];
+        const participantCountData = projectDetails[baseIndex + 8];
+        const contributorCountData = projectDetails[baseIndex + 9];
+        const volunteerCountData = projectDetails[baseIndex + 10];
 
         console.log(`MyProjects project ${i} data status:`, {
           name: nameData?.status,
@@ -145,7 +165,10 @@ export default function MyProjects() {
           endTime: endTimeData?.status,
           targetAmount: targetAmountData?.status,
           raisedAmount: raisedAmountData?.status,
-          status: statusData?.status
+          status: statusData?.status,
+          participantCount: participantCountData?.status,
+          contributorCount: contributorCountData?.status,
+          volunteerCount: volunteerCountData?.status
         });
 
         // Simplified validation - only check for essential data
@@ -158,6 +181,9 @@ export default function MyProjects() {
           const targetAmount = targetAmountData?.result as bigint || BigInt(0);
           const raisedAmount = raisedAmountData?.result as bigint || BigInt(0);
           const status = statusData?.result as number || 0;
+          const participantCount = participantCountData?.result as bigint || BigInt(0);
+          const contributorCount = contributorCountData?.result as bigint || BigInt(0);
+          const volunteerCount = volunteerCountData?.result as bigint || BigInt(0);
 
           console.log(`MyProjects project ${i} details:`, {
             name,
@@ -168,7 +194,10 @@ export default function MyProjects() {
             endTime: Number(endTime),
             targetAmount: Number(targetAmount),
             raisedAmount: Number(raisedAmount),
-            status
+            status,
+            participantCount: Number(participantCount),
+            contributorCount: Number(contributorCount),
+            volunteerCount: Number(volunteerCount)
           });
 
           // Determine project status
@@ -189,10 +218,6 @@ export default function MyProjects() {
             projectStatus = "inactive"; // CANCELLED
           }
 
-          // Generate a stable participants count based on the contract address
-          const addressSum = address.slice(2).split('').reduce((sum: number, char: string) => sum + parseInt(char, 16), 0);
-          const participants = (addressSum % 47) + 3; // Range: 3-49 participants
-
           processedProjects.push({
             id: address,
             name,
@@ -200,8 +225,10 @@ export default function MyProjects() {
             status: projectStatus,
             creator,
             createdAt: new Date(Number(startTime) * 1000).toISOString().split('T')[0],
-            participants,
+            participants: Number(participantCount), // Use real participant count from blockchain
             rewards: `${Number(targetAmount) / 1e18} ETH`, // Assuming 18 decimals
+            targetAmount: `${Number(targetAmount) / 1e18} ETH`,
+            raisedAmount: `${Number(raisedAmount) / 1e18} ETH`,
             address,
           });
         } else {
@@ -231,12 +258,12 @@ export default function MyProjects() {
   }, [projectDetails, validAddresses, userProjectAddresses, userAddress]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+    <div className="min-h-screen pl-10 pr-10 bg-gradient-to-br from-green-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <motion.h1 
-            className="text-4xl md:text-6xl font-bold text-gray-900 mb-4"
+            className="text-4xl md:text-6xl font-bold text-gray-900 mb-4 hover:text-green-800 transition-colors duration-300"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -244,7 +271,7 @@ export default function MyProjects() {
             My Projects
           </motion.h1>
           <motion.p 
-            className="text-lg text-gray-600 max-w-2xl mx-auto"
+            className="text-lg text-gray-600 max-w-2xl mx-auto hover:text-gray-700 transition-colors duration-300"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
