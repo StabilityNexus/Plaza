@@ -8,12 +8,12 @@ export default function Explorer() {
   const [searchTerm, setSearchTerm] = useState("");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="min-h-screen pl-10 pr-10 bg-gradient-to-br from-purple-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <motion.h1 
-            className="text-4xl md:text-6xl font-bold text-gray-900 mb-4"
+            className="text-4xl md:text-6xl font-bold text-gray-900 mb-4 hover:text-purple-800 transition-colors duration-300"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -21,7 +21,7 @@ export default function Explorer() {
             Explore Projects
           </motion.h1>
           <motion.p 
-            className="text-lg text-gray-600 max-w-2xl mx-auto"
+            className="text-lg text-gray-600 max-w-2xl mx-auto hover:text-gray-700 transition-colors duration-300"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -40,7 +40,7 @@ export default function Explorer() {
             <input
               type="text"
               placeholder="Search projects..."
-              className="w-full px-4 py-3 rounded-lg bg-white border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg bg-white border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all hover:border-purple-400 hover:shadow-md"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

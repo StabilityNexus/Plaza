@@ -78,6 +78,32 @@ export default function InteractionClient() {
   const [contributionAmount, setContributionAmount] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<number>(0);
 
+  // Contributor and volunteer details state
+  const [lookupAddress, setLookupAddress] = useState("");
+  const [lookupDetails, setLookupDetails] = useState<{
+    address: string;
+    contributionAmount: bigint;
+    volunteerSeconds: bigint;
+    hasContributed: boolean;
+    isCurrentlyVolunteering: boolean;
+    suggestedTokens: bigint;
+    volunteerTokens: bigint;
+    contributionTokens: bigint;
+  } | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  
+  // Current user details
+  const [currentUserDetails, setCurrentUserDetails] = useState<{
+    contributionAmount: bigint;
+    volunteerSeconds: bigint;
+    hasContributed: boolean;
+    isCurrentlyVolunteering: boolean;
+    suggestedTokens: bigint;
+    volunteerTokens: bigint;
+    contributionTokens: bigint;
+  } | null>(null);
+
   // Format time to UTC 24-hour format
   const formatTimeUTC = (timestamp: number) => {
     if (!timestamp) return "Not set";
@@ -102,6 +128,22 @@ export default function InteractionClient() {
       case 1: return "text-blue-600 bg-blue-50";
       case 2: return "text-red-600 bg-red-50";
       default: return "text-gray-600 bg-gray-50";
+    }
+  };
+
+  // Format volunteer time
+  const formatVolunteerTime = (seconds: bigint) => {
+    const totalSeconds = Number(seconds);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
+    } else {
+      return `${remainingSeconds}s`;
     }
   };
 
@@ -250,6 +292,155 @@ export default function InteractionClient() {
 
     fetchProjectDetails();
   }, [chainId, projectAddress, publicClient, userAddress]);
+
+  // Fetch current user details
+  useEffect(() => {
+    if (!chainId || !publicClient || !isValidAddress(projectAddress) || !isValidUserAddress(userAddress)) return;
+
+    async function fetchCurrentUserDetails() {
+      try {
+        const [
+          contributionAmount,
+          volunteerSeconds,
+          hasContributed,
+          isCurrentlyVolunteering,
+          suggestedTokenData
+        ] = await Promise.all([
+          publicClient!.readContract({
+            address: projectAddress,
+            abi: PlazaAbi,
+            functionName: "contributionAmounts",
+            args: [userAddress],
+          }),
+          publicClient!.readContract({
+            address: projectAddress,
+            abi: PlazaAbi,
+            functionName: "volunteerSecondsPerParticipant",
+            args: [userAddress],
+          }),
+          publicClient!.readContract({
+            address: projectAddress,
+            abi: PlazaAbi,
+            functionName: "hasContributed",
+            args: [userAddress],
+          }),
+          publicClient!.readContract({
+            address: projectAddress,
+            abi: PlazaAbi,
+            functionName: "isVolunteering",
+            args: [userAddress],
+          }),
+          publicClient!.readContract({
+            address: projectAddress,
+            abi: PlazaAbi,
+            functionName: "suggestTokenAmount",
+            args: [userAddress],
+          }),
+        ]) as [bigint, bigint, boolean, boolean, [bigint, bigint, bigint]];
+
+        setCurrentUserDetails({
+          contributionAmount,
+          volunteerSeconds,
+          hasContributed,
+          isCurrentlyVolunteering,
+          suggestedTokens: suggestedTokenData[0],
+          volunteerTokens: suggestedTokenData[1],
+          contributionTokens: suggestedTokenData[2],
+        });
+      } catch (err) {
+        console.error("Error fetching current user details:", err);
+      }
+    }
+
+    fetchCurrentUserDetails();
+  }, [chainId, projectAddress, publicClient, userAddress]);
+
+  // Fetch details for a specific address
+  const fetchAddressDetails = async (address: string) => {
+    if (!chainId || !publicClient || !isValidAddress(projectAddress) || !isValidAddress(address as `0x${string}`)) {
+      setLookupError("Invalid address provided");
+      return;
+    }
+
+    setLookupLoading(true);
+    setLookupError(null);
+    
+    try {
+      const [
+        contributionAmount,
+        volunteerSeconds,
+        hasContributed,
+        isCurrentlyVolunteering,
+        suggestedTokenData
+      ] = await Promise.all([
+        publicClient.readContract({
+          address: projectAddress,
+          abi: PlazaAbi,
+          functionName: "contributionAmounts",
+          args: [address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: projectAddress,
+          abi: PlazaAbi,
+          functionName: "volunteerSecondsPerParticipant",
+          args: [address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: projectAddress,
+          abi: PlazaAbi,
+          functionName: "hasContributed",
+          args: [address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: projectAddress,
+          abi: PlazaAbi,
+          functionName: "isVolunteering",
+          args: [address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: projectAddress,
+          abi: PlazaAbi,
+          functionName: "suggestTokenAmount",
+          args: [address as `0x${string}`],
+        }),
+      ]) as [bigint, bigint, boolean, boolean, [bigint, bigint, bigint]];
+
+      setLookupDetails({
+        address,
+        contributionAmount,
+        volunteerSeconds,
+        hasContributed,
+        isCurrentlyVolunteering,
+        suggestedTokens: suggestedTokenData[0],
+        volunteerTokens: suggestedTokenData[1],
+        contributionTokens: suggestedTokenData[2],
+      });
+    } catch (err) {
+      console.error("Error fetching address details:", err);
+      setLookupError("Failed to fetch address details");
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  // Handler for address lookup
+  const handleAddressLookup = () => {
+    if (!lookupAddress.trim()) {
+      setLookupError("Please enter a valid address");
+      return;
+    }
+    fetchAddressDetails(lookupAddress.trim());
+  };
+
+  // Handler to show current user details
+  const handleShowCurrentUser = () => {
+    if (!userAddress) {
+      setLookupError("Please connect your wallet first");
+      return;
+    }
+    setLookupAddress(userAddress);
+    fetchAddressDetails(userAddress);
+  };
 
   // Handler for contributing with form
   const handleContribute = async () => {
@@ -470,15 +661,15 @@ export default function InteractionClient() {
                 {formatEther(targetAmount)} ETH
               </p>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-600 font-medium">Raised Amount</p>
-              <p className="text-2xl font-bold text-green-900">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-600 font-medium">Raised Amount</p>
+              <p className="text-2xl font-bold text-blue-900">
                 {formatEther(raisedAmount)} ETH
               </p>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <p className="text-sm text-purple-600 font-medium">Available Funds</p>
-              <p className="text-2xl font-bold text-purple-900">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-600 font-medium">Available Amount</p>
+              <p className="text-2xl font-bold text-blue-900">
                 {formatEther(contractBalance)} ETH
               </p>
             </div>
@@ -553,7 +744,7 @@ export default function InteractionClient() {
                 variant="secondary"
                 className="w-full"
               >
-                {showDetails ? "Hide" : "Show"} Participant Details
+                {showDetails ? "Hide" : "Show"} Contributor & Volunteer Details
               </Button>
             </div>
           </div>
@@ -579,6 +770,7 @@ export default function InteractionClient() {
                   <Button
                     onClick={handleStartVolunteering}
                     disabled={txLoading || isVolunteering || projectStatus !== 0}
+                    variant="secondary"
                     className="flex-1"
                   >
                     {isVolunteering ? "Already Volunteering" : "Start Volunteering"}
@@ -613,7 +805,7 @@ export default function InteractionClient() {
                        min="0"
                        value={contributionAmount}
                        onChange={(e) => setContributionAmount(e.target.value)}
-                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                        placeholder="0.1"
                        disabled={txLoading || projectStatus !== 0}
                      />
@@ -621,6 +813,7 @@ export default function InteractionClient() {
                    <Button
                      onClick={() => handleContribute()}
                      disabled={txLoading || !contributionAmount || projectStatus !== 0}
+                     variant="secondary"
                      className="w-full"
                    >
                      {txLoading ? "Processing..." : "Contribute"}
@@ -664,6 +857,7 @@ export default function InteractionClient() {
                                  <Button
                    onClick={handleWithdrawFunds}
                    disabled={txLoading || contractBalance === BigInt(0)}
+                   variant="secondary"
                    className="w-full"
                  >
                    Withdraw Funds ({formatEther(contractBalance)} ETH)
@@ -673,14 +867,218 @@ export default function InteractionClient() {
           </div>
         </div>
 
-        {/* Participant Details Modal/Section */}
+        {/* Contributor and Volunteer Details */}
         {showDetails && (
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">👥 Participant Details</h3>
-            <div className="text-center py-8 text-gray-500">
-              <p>Detailed participant and volunteer information will be displayed here.</p>
-              <p className="text-sm mt-2">This feature requires additional contract queries to fetch individual participant data.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">👥 Contributor & Volunteer Details</h3>
+            
+            {/* Current User Details */}
+            {isValidUserAddress(userAddress) && currentUserDetails && (
+              <div className="mb-8 p-6 bg-blue-50 rounded-lg">
+                <h4 className="text-lg font-semibold text-blue-900 mb-4">Your Activity</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contribution Details */}
+                  <div className="bg-white p-4 rounded-lg">
+                    <h5 className="font-semibold text-gray-900 mb-3">💰 Contribution</h5>
+                    {currentUserDetails.hasContributed ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Total Contributed:</span>{" "}
+                          <span className="text-green-600 font-bold">
+                            {formatEther(currentUserDetails.contributionAmount)} ETH
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Contribution Tokens:</span>{" "}
+                          <span className="text-blue-600 font-bold">
+                            {formatEther(currentUserDetails.contributionTokens)}
+                          </span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">No contributions yet</p>
+                    )}
+                  </div>
+
+                  {/* Volunteer Details */}
+                  <div className="bg-white p-4 rounded-lg">
+                    <h5 className="font-semibold text-gray-900 mb-3">🤝 Volunteering</h5>
+                    {currentUserDetails.volunteerSeconds > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Total Time:</span>{" "}
+                          <span className="text-green-600 font-bold">
+                            {formatVolunteerTime(currentUserDetails.volunteerSeconds)}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Volunteer Tokens:</span>{" "}
+                          <span className="text-purple-600 font-bold">
+                            {formatEther(currentUserDetails.volunteerTokens)}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Status:</span>{" "}
+                          <span className={currentUserDetails.isCurrentlyVolunteering ? "text-green-600 font-semibold" : "text-gray-600"}>
+                            {currentUserDetails.isCurrentlyVolunteering ? "Currently Volunteering" : "Not Currently Volunteering"}
+                          </span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">No volunteer time yet</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Suggested Tokens */}
+                {currentUserDetails.suggestedTokens > 0 && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Total Suggested Tokens:</span>{" "}
+                      <span className="text-blue-600 font-bold text-lg">
+                        {formatEther(currentUserDetails.suggestedTokens)}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Address Lookup */}
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">🔍 Look Up Address Details</h4>
+              <div className="flex gap-3 mb-4">
+                <input
+                  type="text"
+                  value={lookupAddress}
+                  onChange={(e) => setLookupAddress(e.target.value)}
+                  placeholder="Enter address (0x...)"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  disabled={lookupLoading}
+                />
+                <Button
+                  onClick={handleAddressLookup}
+                  disabled={lookupLoading || !lookupAddress.trim()}
+                  variant="secondary"
+                >
+                  {lookupLoading ? "Loading..." : "Look Up"}
+                </Button>
+                {isValidUserAddress(userAddress) && (
+                  <Button
+                    onClick={handleShowCurrentUser}
+                    disabled={lookupLoading}
+                    variant="secondary"
+                  >
+                    Show My Details
+                  </Button>
+                )}
+              </div>
+
+              {lookupError && (
+                <div className="text-red-600 text-sm mb-4 p-2 bg-red-50 rounded">
+                  {lookupError}
+                </div>
+              )}
             </div>
+
+            {/* Lookup Results */}
+            {lookupDetails && (
+              <div className="p-6 bg-gray-50 rounded-lg">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                  📊 Details for {lookupDetails.address}
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contribution Info */}
+                  <div className="bg-white p-4 rounded-lg">
+                    <h5 className="font-semibold text-gray-900 mb-3">💰 Contribution Details</h5>
+                    {lookupDetails.hasContributed ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Total Contributed:</span>{" "}
+                          <span className="text-green-600 font-bold">
+                            {formatEther(lookupDetails.contributionAmount)} ETH
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Contribution Tokens:</span>{" "}
+                          <span className="text-blue-600 font-bold">
+                            {formatEther(lookupDetails.contributionTokens)}
+                          </span>
+                        </p>
+                        <p className="text-xs text-green-600 font-medium">✅ Has Contributed</p>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 text-sm">
+                        <p>❌ No contributions</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Volunteer Info */}
+                  <div className="bg-white p-4 rounded-lg">
+                    <h5 className="font-semibold text-gray-900 mb-3">🤝 Volunteer Details</h5>
+                    {lookupDetails.volunteerSeconds > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Total Time:</span>{" "}
+                          <span className="text-green-600 font-bold">
+                            {formatVolunteerTime(lookupDetails.volunteerSeconds)}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Volunteer Tokens:</span>{" "}
+                          <span className="text-purple-600 font-bold">
+                            {formatEther(lookupDetails.volunteerTokens)}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Current Status:</span>{" "}
+                          <span className={lookupDetails.isCurrentlyVolunteering ? "text-green-600 font-semibold" : "text-gray-600"}>
+                            {lookupDetails.isCurrentlyVolunteering ? "Currently Volunteering" : "Not Currently Volunteering"}
+                          </span>
+                        </p>
+                        <p className="text-xs text-green-600 font-medium">
+                          {lookupDetails.isCurrentlyVolunteering ? "🟢 Active Volunteer" : "⭐ Past Volunteer"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 text-sm">
+                        <p>❌ No volunteer time</p>
+                        <p className="text-xs">
+                          Status: {lookupDetails.isCurrentlyVolunteering ? "Currently volunteering but no time logged yet" : "Not volunteering"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Total Suggested Tokens */}
+                {lookupDetails.suggestedTokens > 0 && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <p className="text-center">
+                      <span className="font-medium text-gray-700">Total Suggested Tokens: </span>
+                      <span className="text-blue-600 font-bold text-xl">
+                        {formatEther(lookupDetails.suggestedTokens)}
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Summary */}
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 text-center">
+                    {lookupDetails.hasContributed && lookupDetails.volunteerSeconds > 0
+                      ? "🌟 This address has both contributed and volunteered!"
+                      : lookupDetails.hasContributed
+                      ? "💝 This address has contributed to the project"
+                      : lookupDetails.volunteerSeconds > 0
+                      ? "🤝 This address has volunteered for the project"
+                      : "ℹ️ This address has not participated in the project yet"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -706,13 +1104,6 @@ export default function InteractionClient() {
             <p className="text-yellow-800 text-center">Please connect your wallet to interact with this project.</p>
           </div>
         )}
-
-        {/* Navigation */}
-        <div className="text-center">
-          <Link href="/">
-            <Button variant="secondary">← Back to Map</Button>
-          </Link>
-        </div>
       </motion.div>
     </div>
   );
