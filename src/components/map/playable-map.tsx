@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter
 import MapComponent from "@/components/map/map";
 import { Token } from "@/types/types";
 import {
@@ -9,13 +8,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Info from "../info";
-import { useToast } from "@/hooks/use-toast";
 import NexusLogo from "@/assets/nexusLogo.png";
 import Button from "@/components/Button";
 import Link from "next/link";
 
 export default function PlayableMap() {
-  const router = useRouter(); // Initialize the router
 
   // Token markers
   const tokens = useMemo(
