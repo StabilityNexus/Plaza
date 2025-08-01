@@ -2,10 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import { Plaza } from "./Plaza.sol";
+import "./Plaza.sol";
 
 contract PlazaFactory is Ownable {
-    
     mapping(address => Plaza[]) public creatorToProjects;
     mapping(address => uint256) public creatorToTotalProjects;
 
@@ -14,59 +13,41 @@ contract PlazaFactory is Ownable {
 
     event ProjectCreated(
         uint256 indexed projectId,
+        address indexed creator,
         address projectAddress,
-        string name,
-        int256 latitude,
-        int256 longitude,
-        uint256 targetAmount
-    );
-
-    constructor(address initialOwner) Ownable(initialOwner) {}
-
-    function createProject(
-        string memory name,
-        string memory symbol,
-        string memory projectName,
-        string memory projectDescription,
-        int256 latitude,
-        int256 longitude,
+        string  projectName,
+        string  projectDescription,
+        int256  latitude,
+        int256  longitude,
         uint256 startTime,
         uint256 endTime,
-        uint256 targetAmount
-    ) external returns (address) {
+        uint256 totalTickets,
+        bytes32 merkleRoot
+    );
+
+    constructor() {}
+
+    function createProject( string calldata projectName, string calldata projectDescription, int256  latitude, int256  longitude, uint256 startTime, uint256 endTime, uint256 totalTickets) external returns (address) {
         projectCount++;
+        Plaza project = new Plaza();
 
-        Plaza newProject = new Plaza(
-            name,
-            symbol,
-            projectName,
-            projectDescription,
-            latitude,
-            longitude,
-            startTime,
-            endTime,
-            targetAmount,
-            msg.sender
-        );
+        project.initializePool( startTime, endTime, totalTickets, projectName, projectDescription, latitude, longitude);
+        project.transferOwnership(msg.sender);
 
-        allProjects.push(newProject);
-        totalProjects++;
-        creatorToProjects[msg.sender].push(newProject);
+        allProjects.push(project);
+        creatorToProjects[msg.sender].push(project);
         creatorToTotalProjects[msg.sender]++;
 
-        emit ProjectCreated(
-            projectCount,
-            address(newProject),
-            projectName,
-            latitude,
-            longitude,
-            targetAmount
-        );
-
-        return address(newProject);
+        emit ProjectCreated(projectCount,msg.sender, address(project), projectName, projectDescription, latitude, longitude, startTime, endTime, totalTickets, merkleRoot);
+        return address(project);
     }
-    
-    function getProjectsByCreator(address _creator) external view returns (Plaza[] memory) {
+
+    /// @notice Retrieve all projects created by a given address
+    function getProjectsByCreator(address _creator)
+        external
+        view
+        returns (Plaza[] memory)
+    {
         return creatorToProjects[_creator];
     }
 }
