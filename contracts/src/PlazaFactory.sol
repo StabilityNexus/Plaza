@@ -20,33 +20,28 @@ contract PlazaFactory is Ownable {
         int256  latitude,
         int256  longitude,
         uint256 startTime,
-        uint256 endTime,
-        uint256 totalTickets,
-        bytes32 merkleRoot
+        uint256 endTime
     );
 
-    constructor() {}
+    constructor() Ownable(msg.sender) {}
 
-    function createProject( string calldata projectName, string calldata projectDescription, int256  latitude, int256  longitude, uint256 startTime, uint256 endTime, uint256 totalTickets) external returns (address) {
+    function createProject( string calldata projectName, string calldata projectDescription, int256  latitude, int256  longitude, uint256 startTime, uint256 endTime) external returns (address) {
         projectCount++;
         Plaza project = new Plaza();
 
-        project.initializePool( startTime, endTime, totalTickets, projectName, projectDescription, latitude, longitude);
+        project.initializePool( startTime, endTime, projectName, projectDescription, latitude, longitude);
         project.transferOwnership(msg.sender);
 
         allProjects.push(project);
         creatorToProjects[msg.sender].push(project);
         creatorToTotalProjects[msg.sender]++;
 
-        emit ProjectCreated(projectCount,msg.sender, address(project), projectName, projectDescription, latitude, longitude, startTime, endTime, totalTickets, merkleRoot);
+        emit ProjectCreated(projectCount,msg.sender, address(project), projectName, projectDescription, latitude, longitude, startTime, endTime);
         return address(project);
     }
 
     /// @notice Retrieve all projects created by a given address
-    function getProjectsByCreator(address _creator)
-        external
-        view
-        returns (Plaza[] memory)
+    function getProjectsByCreator(address _creator) external view returns (Plaza[] memory)
     {
         return creatorToProjects[_creator];
     }

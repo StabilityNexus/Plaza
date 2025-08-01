@@ -28,6 +28,8 @@ contract Plaza is Ownable, ReentrancyGuard {
     event WindowUpdated(   uint256 startTime, uint256 endTime);
     event ProjectInfoUpdated( string  projectName, string  projectDescription, int256  latitude, int256  longitude );
 
+    constructor() Ownable(msg.sender) {}
+
     modifier onlyActive() {
         require(block.timestamp >= startTime, "Not started");
         require(block.timestamp <= endTime,   "Already ended");
@@ -38,8 +40,6 @@ contract Plaza is Ownable, ReentrancyGuard {
     function initializePool(
         uint256  _startTime,
         uint256  _endTime,
-        uint256  _totalTickets,
-        bytes32  _merkleRoot,
         string  calldata _projectName,
         string  calldata _projectDescription,
         int256   _latitude,
@@ -49,9 +49,6 @@ contract Plaza is Ownable, ReentrancyGuard {
 
         startTime    = _startTime;
         endTime      = _endTime;
-        totalTickets = _totalTickets;
-        merkleRoot   = _merkleRoot;
-        emit MerkleRootUpdated(_merkleRoot, _totalTickets);
         emit WindowUpdated(_startTime, _endTime);
 
         projectName        = _projectName;
