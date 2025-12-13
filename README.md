@@ -80,7 +80,7 @@
 
 
 
-[Plaza](https://plaza.stability.nexus/) is a map-first, onchain coordination hub where anyone can create, explore, and contribute to location-anchored impact projects. Each project deploys its own ERC20 token, tracks contributors and volunteers on-chain, and can receive ETH contributions directly through the dApp.
+[Plaza](https://plaza.stability.nexus/) is a map-first, on-chain coordination hub where anyone can create, explore, and contribute to location-anchored impact projects. Each project deploys its own ERC20 token, tracks contributors and volunteers on-chain, and can receive ETH contributions directly through the dApp.
 
 
 
