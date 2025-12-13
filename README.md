@@ -176,7 +176,7 @@ pnpm install
 
 Create `src/.env.local` and set your Mapbox token:
 
-```
+```env
 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_actual_token_here
 ```
 
