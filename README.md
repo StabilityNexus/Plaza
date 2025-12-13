@@ -10,7 +10,7 @@
 
   <img alt="Stability Nexus" src="public/stability.svg" width="175">
 
-  <img src="public/todo-project-logo.svg" width="175" />
+ <img alt="Plaza" src="public/todo-project-logo.svg" width="175" />
 
 </div>
 
