@@ -4,190 +4,141 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Plaza is ERC20, Ownable, ReentrancyGuard {
-    enum ProjectStatus { ACTIVE, COMPLETED, CANCELLED }
+contract Plaza is Ownable, ReentrancyGuard {
+    string  public projectName;
+    string  public projectDescription;
+    int256  public latitude;
+    int256  public longitude;
 
-    uint256 public constant PROTOCOL_FEE_PERCENTAGE = 3e4;
-    address public constant protocolFeeReceiver = 0x599B4E3A27C6073E86a4b8dC2D7be92F74F7C232;
+    bytes32 public merkleRoot;              // Root of the ticket-password-claimer Merkle tree
+    uint256 public totalTickets;            // Total number of one-time passwords issued
+    mapping(uint256 => bool) public ticketUsed;
 
-    string public projectName;
-    string public projectDescription;
-    int256 public latitude;
-    int256 public longitude;
+    address[] public tokensDeposited;
+    mapping(address => bool)    private tokensAvailable;
+    mapping(address => uint256) public  tokenDeposits;
+
     uint256 public startTime;
     uint256 public endTime;
-    uint256 public targetAmount;
-    uint256 public raisedAmount = 0;   // Total amount raised
-    ProjectStatus public status;
 
-    uint256 public constant PRECISION = 1e6;
-    uint256 public participantCount;        // Total number of people who ever participated
-    uint256 public volunteerCount;          // Current number of active volunteers
-    uint256 public contributorCount;        // Total number of people who ever contributed
-    uint256 public volunteeredSeconds;      // Total seconds volunteered by all users
-    
-    mapping(address => bool) public isVolunteering;
-    mapping(address => uint256) public volunteerStartTimes;
-    mapping(address => bool) public hasContributed;
-    mapping(address => uint256) public contributionAmounts;
-    mapping(address => uint256) public volunteerSecondsPerParticipant;  // Track volunteer seconds per participant
-    mapping(address => bool) public isBlacklisted;                      // Blacklist mapping
+    event TokenDeposited( address indexed depositor, address indexed token, uint256 amount);
+    event TokenClaimed(   address indexed claimer,   address indexed token, uint256 amount);
+    event MerkleRootUpdated(bytes32 newRoot, uint256 totalTickets);
+    event WindowUpdated(   uint256 startTime, uint256 endTime);
+    event ProjectInfoUpdated( string  projectName, string  projectDescription, int256  latitude, int256  longitude );
 
-    event VolunteerStarted(address indexed volunteer, uint256 startTime);
-    event VolunteerEnded(address indexed volunteer, uint256 duration, uint256 tokensAwarded);
-    event FundsContributed(address indexed contributor, uint256 amount, uint256 tokensAwarded);
-    event ProjectStatusUpdated(ProjectStatus newStatus);
-    event ProtocolFeeCollected(uint256 feeAmount);
-    event ProtocolFeeReceiverUpdated(address indexed newReceiver);
-    event FundsWithdrawn(uint256 amount);
-    event ParticipantAdded(address indexed participant);
-    event ParticipantBlacklisted(address indexed participant);
-    event ParticipantUnblacklisted(address indexed participant);
-    event TokensMinted(address indexed recipient, uint256 amount, string reason);
-
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        string memory _projectName,
-        string memory _projectDescription,
-        int256 _latitude,
-        int256 _longitude,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _targetAmount,
-        address _owner
-    ) ERC20(_name, _symbol) Ownable(_owner) {        
-        projectName = _projectName; 
-        projectDescription = _projectDescription; 
-        latitude = _latitude; 
-        longitude = _longitude; 
-        startTime = _startTime; 
-        endTime = _endTime; 
-        targetAmount = _targetAmount; 
-        status = ProjectStatus.ACTIVE; 
-    } 
-
-    /** @dev Prevents direct ETH transfers to the contract. Users must use the contribute() function to send funds. */
-    receive() external payable {
-        revert("Use contribute() to send funds");
-    }
-
-    /** @dev Prevents fallback calls to the contract. This ensures users can't accidentally send funds through fallback. */
-    fallback() external payable {
-        revert("Function does not exist");
-    }
+    constructor() Ownable(msg.sender) {}
 
     modifier onlyActive() {
-        require(status == ProjectStatus.ACTIVE, "Project is not active");
-        require(block.timestamp >= startTime, "Project has not started");
-        require(block.timestamp <= endTime, "Project has ended");
+        require(block.timestamp >= startTime, "Not started");
+        require(block.timestamp <= endTime,   "Already ended");
         _;
     }
 
-    function startVolunteering(address participant) external onlyActive {
-        require(!isBlacklisted[participant], "Participant is blacklisted");
-        require(!isVolunteering[participant], "Already volunteering");
-        
-        if (balanceOf(participant) == 0 && !hasContributed[participant]) {
-            participantCount++;
-            emit ParticipantAdded(participant);
+
+    function initializePool(
+        uint256  _startTime,
+        uint256  _endTime,
+        string  calldata _projectName,
+        string  calldata _projectDescription,
+        int256   _latitude,
+        int256   _longitude
+    ) external onlyOwner {
+        require(_startTime < _endTime, "Bad window");
+
+        startTime    = _startTime;
+        endTime      = _endTime;
+        emit WindowUpdated(_startTime, _endTime);
+
+        projectName        = _projectName;
+        projectDescription = _projectDescription;
+        latitude           = _latitude;
+        longitude          = _longitude;
+        emit ProjectInfoUpdated(_projectName, _projectDescription, _latitude, _longitude);
+    }
+
+    function updateMerkleRoot( uint256 _totalTickets, bytes32 _merkleRoot) external onlyOwner {
+        totalTickets = _totalTickets;
+        merkleRoot   = _merkleRoot;
+        emit MerkleRootUpdated(_merkleRoot, _totalTickets);
+    }
+
+    function updateWindow(uint256 _startTime, uint256 _endTime) external onlyOwner {
+        require(_startTime < _endTime, "Bad window");
+        startTime = _startTime;
+        endTime   = _endTime;
+        emit WindowUpdated(_startTime, _endTime);
+    }
+
+    function updateProjectInfo( string  calldata _projectName, string  calldata _projectDescription, int256   _latitude, int256   _longitude) external onlyOwner {
+        projectName        = _projectName;
+        projectDescription = _projectDescription;
+        latitude           = _latitude;
+        longitude          = _longitude;
+        emit ProjectInfoUpdated(_projectName, _projectDescription, _latitude, _longitude);
+    }
+
+    function depositToken(IERC20 token, uint256 amount) external nonReentrant onlyActive
+    {
+        require(amount > 0, "Must deposit >0");
+        address t = address(token);
+        if (!tokensAvailable[t]) {
+            tokensAvailable[t] = true;
+            tokensDeposited.push(t);
         }
-        
-        volunteerStartTimes[participant] = block.timestamp;
-        isVolunteering[participant] = true;
-        volunteerCount++;
-        
-        emit VolunteerStarted(participant, block.timestamp);
+        token.transferFrom(msg.sender, address(this), amount);
+        tokenDeposits[t] += amount;
+        emit TokenDeposited(msg.sender, t, amount);
     }
 
-    function endVolunteering(address participant) external nonReentrant {
-        require(isVolunteering[participant], "Not currently volunteering");
-        uint256 startTimeOfUser = volunteerStartTimes[participant];
-        uint256 duration = block.timestamp - startTimeOfUser;
-        
-        isVolunteering[participant] = false;
-        volunteerCount--;
-        volunteeredSeconds += duration;
-        volunteerSecondsPerParticipant[participant] += duration;  // Track individual volunteer seconds
-        
-        emit VolunteerEnded(participant, duration, 0); // No tokens minted automatically
-    }
 
-    function contribute() external payable onlyActive nonReentrant {
-        require(targetAmount > 0, "Project does not accept funds");
-        require(msg.value > 0, "Must contribute some amount");
-        
-        if (balanceOf(msg.sender) == 0 && !isVolunteering[msg.sender]) {
-            participantCount++;
-            emit ParticipantAdded(msg.sender);
+    function claim( uint256 index,  bytes32 secret,  bytes32[] calldata proof,  address[] calldata tokensToClaim) external nonReentrant onlyActive {
+        require(index < totalTickets, "Invalid index");
+
+        // 1) Recompute leaf including caller's address
+        bytes32 leaf = keccak256(abi.encodePacked(index, secret, msg.sender));
+
+        // 2) Verify Merkle proof
+        require(_verifyProof(proof, merkleRoot, leaf), "Bad proof");
+
+        // 3) Ensure this ticket hasn't been used before
+        require(!ticketUsed[index], "Ticket already spent");
+        ticketUsed[index] = true;
+
+        // 4) Transfer share of each requested token
+        for (uint256 i = 0; i < tokensToClaim.length; i++) {
+            address t = tokensToClaim[i];
+            require(tokensAvailable[t], "Token not supported");
+
+            uint256 total = tokenDeposits[t];
+            uint256 share = total / totalTickets;
+            require(share > 0, "No share available");
+
+            IERC20(t).transfer(msg.sender, share);
+            emit TokenClaimed(msg.sender, t, share);
         }
-        
-        if (!hasContributed[msg.sender]) {
-            contributorCount++;
-            hasContributed[msg.sender] = true;
+    }
+
+    /// @notice Owner can withdraw any remaining tokens after pool end.
+    function withdrawToken(IERC20 token, uint256 amount) external onlyOwner {
+        token.transfer(owner(), amount);
+    }
+
+    // --- Internal proof verification ---
+    function _verifyProof( bytes32[] memory proof, bytes32 root,bytes32 leaf ) internal pure returns (bool) {
+        bytes32 hash = leaf;
+        for (uint256 i = 0; i < proof.length; i++) {
+            bytes32 p = proof[i];
+            hash = hash < p
+                ? keccak256(abi.encodePacked(hash, p))
+                : keccak256(abi.encodePacked(p, hash));
         }
-
-        contributionAmounts[msg.sender] += msg.value;      // Track individual contribution amount
-        
-        uint256 protocolFee = (msg.value * PROTOCOL_FEE_PERCENTAGE) / PRECISION;
-        (bool feeSuccess, ) = protocolFeeReceiver.call{value: protocolFee}("");
-        require(feeSuccess, "Protocol fee transfer failed");
-
-        raisedAmount += msg.value;
-        
-        emit FundsContributed(msg.sender, msg.value, 0); // No tokens minted automatically
-        emit ProtocolFeeCollected(protocolFee);
+        return hash == root;
     }
 
-    function withdrawFunds() external onlyOwner nonReentrant {
-        uint256 balance = balance();
-        require(balance > 0, "No funds to withdraw");
-        
-        (bool sent, ) = owner().call{value: balance}("");
-        require(sent, "Failed to send funds");
-        
-        emit FundsWithdrawn(balance);
+    /// @notice Returns the list of supported tokens
+    function getSupportedTokens() external view returns (address[] memory) {
+        return tokensDeposited;
     }
-
-    function updateProjectStatus(ProjectStatus _status) external onlyOwner {
-        require(_status != status, "Status already set");
-        status = _status;
-        emit ProjectStatusUpdated(_status);
-    }
-
-    function blacklistParticipant(address participant) external onlyOwner {
-        require(!isBlacklisted[participant], "Participant already blacklisted");        
-        isBlacklisted[participant] = true;
-        emit ParticipantBlacklisted(participant);
-    }
-
-    function unblacklistParticipant(address participant) external onlyOwner {
-        require(isBlacklisted[participant], "Participant not blacklisted");
-        isBlacklisted[participant] = false;
-        emit ParticipantUnblacklisted(participant);
-    }
-
-    /** @dev Allows the project owner to mint tokens to any address */
-    function mintTokens(address recipient, uint256 amount, string memory reason) external onlyOwner {
-        require(amount > 0, "Amount must be greater than 0");
-        require(recipient != address(0), "Invalid recipient address");
-        
-        _mint(recipient, amount);
-        emit TokensMinted(recipient, amount, reason);
-    }
-
-    /** @dev Suggests token amount based on volunteering time and contributions */
-    function suggestTokenAmount(address participant) external view returns ( uint256 suggestedAmount, uint256 volunteerTokens, uint256 contributionTokens
-    ) {
-        volunteerTokens = (volunteerSecondsPerParticipant[participant] * PRECISION) / 3600;    // Calculate tokens based on volunteer time (1 hour = PRECISION tokens)
-        contributionTokens = contributionAmounts[participant];                                  // Calculate tokens based on contributions (1:1 ratio)
-        suggestedAmount = volunteerTokens + contributionTokens;
-        return (suggestedAmount, volunteerTokens, contributionTokens);
-    }
-
-    function balance() public view returns (uint256) { return address(this).balance; }
-    function isFundingGoalReached() public view returns (bool) { return targetAmount <= raisedAmount; }
 }
-
